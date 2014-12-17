@@ -1,0 +1,159 @@
+#!/usr/bin/env ruby
+
+require "thor"
+require "barge"
+require "redis"
+require "net/ssh"
+
+class Cluster < Thor
+  CLUSTER_NAME = "general-cluster"
+
+  desc "add N", "Add machines to the cluster"
+  def add(n)
+    options = {
+      region: "nyc2",
+      size: "512mb",
+      image: "ubuntu-14-04-x64",
+      ssh_keys: [10347],
+      backups: false,
+      ipv6: true,
+      user_data: nil,
+      private_networking: nil
+    }
+
+    n.to_i.times do
+      redis.incr("#{CLUSTER_NAME}-counter")
+      i = redis.get("#{CLUSTER_NAME}-counter")
+      name = "#{CLUSTER_NAME}-node-#{i}"
+      puts "Launching #{name}"
+      result = barge.droplet.create(options.merge(name: name))
+      redis.hset(CLUSTER_NAME, result.droplet.id, result.droplet.name)
+    end
+  end
+
+  desc "status", "Check the status of machines in the cluster"
+  def status
+    puts "None found" if keys.empty?
+    keys.each do |droplet_id|
+      droplet_name = redis.hget(CLUSTER_NAME, droplet_id)
+      result = barge.droplet.show(droplet_id)
+      if result.id == "not_found"
+        puts "#{droplet_name} :: Not Found"
+      else
+        puts "#{droplet_name} :: #{result.droplet.networks["v4"].first.ip_address} :: #{result.droplet.id} :: #{result.droplet.status}"
+      end
+    end
+  end
+
+  desc "provision", "Provision the machines in the cluster"
+  def provision
+    provisioning_script = [
+      # https://docs.docker.com/installation/ubuntulinux/
+      "apt-get update",
+      "sudo apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys 36A1D7869245C8950F966E92D8576A8BA88D21E9",
+      "echo deb https://get.docker.com/ubuntu docker main > /etc/apt/sources.list.d/docker.list",
+      "apt-get update",
+      "apt-get -y install lxc-docker",
+      # https://github.com/docker/swarm/
+      "apt-get -y install golang",
+      "mkdir -p /opt/gocode",
+      "echo export GOPATH=/opt/gocode >> /etc/bash.bashrc",
+      "echo export PATH=$PATH:/opt/gocode/bin >> /etc/bash.bashrc",
+      "GOPATH=/opt/gocode go get -u github.com/docker/swarm"
+    ]
+    puts "None found" if keys.empty?
+    keys.each do |droplet_id|
+      droplet_name = redis.hget(CLUSTER_NAME, droplet_id)
+      result = barge.droplet.show(droplet_id)
+      if result.id == "not_found"
+        puts "#{droplet_name} :: Not Found"
+      else
+        ip_address = result.droplet.networks["v4"].first.ip_address
+        status = result.droplet.status
+        if status=="new"
+          puts "Not ready #{droplet_name} :: #{ip_address} :: #{status}"
+        elsif status=="active"
+          begin
+            Net::SSH.start(ip_address, "root") do |ssh|
+              puts "Provisioning #{droplet_name} :: #{ip_address}"
+              provisioning_script.each do |command|
+                stdout_data, stderr_data, exit_code, exit_signal = ssh_exec!(ssh, command)
+                puts "Ran [#{exit_code}] [#{command}]"
+              end
+            end
+          rescue Errno::ECONNREFUSED
+            puts "Not ready #{droplet_name} :: #{ip_address} :: waiting for ssh"
+          end
+        else
+          puts "Unknown status #{droplet_name} :: #{ip_address} :: #{status}"
+        end
+      end
+    end
+  end
+
+  desc "destroy", "Destroy the machines in the cluster"
+  def destroy
+    puts "None found" if keys.empty?
+    keys.each do |droplet_id|
+      droplet_name = redis.hget(CLUSTER_NAME, droplet_id)
+      result = barge.droplet.destroy(droplet_id)
+      if result.success?
+        puts "Destroyed #{droplet_name}"
+        redis.hdel(CLUSTER_NAME, droplet_id)
+      else
+        if result.id=="not_found"
+          redis.hdel("hubothosting-swarm", droplet_id)
+        end
+        puts "Unabled to destroy #{droplet_name}, [#{result.id}] [#{result.message}]"
+      end
+    end
+  end
+
+
+  no_tasks do
+    def redis
+      @redis ||= Redis.new(url: ENV["REDIS_URL"])
+    end
+
+    def barge
+      @barge ||= Barge::Client.new(access_token: ENV["DIGITALOCEAN_TOKEN"])
+    end
+
+    def keys
+      @keys ||= redis.hkeys(CLUSTER_NAME)
+    end
+
+    def ssh_exec!(ssh, command)
+      stdout_data = ""
+      stderr_data = ""
+      exit_code = nil
+      exit_signal = nil
+      ssh.open_channel do |channel|
+        channel.exec(command) do |ch, success|
+          unless success
+            abort "FAILED: couldn't execute command (ssh.channel.exec)"
+          end
+          channel.on_data do |ch,data|
+            stdout_data+=data
+          end
+
+          channel.on_extended_data do |ch,type,data|
+            stderr_data+=data
+          end
+
+          channel.on_request("exit-status") do |ch,data|
+            exit_code = data.read_long
+          end
+
+          channel.on_request("exit-signal") do |ch, data|
+            exit_signal = data.read_long
+          end
+        end
+      end
+      ssh.loop
+      [stdout_data, stderr_data, exit_code, exit_signal]
+    end
+  end
+end
+
+Cluster.start(ARGV)
