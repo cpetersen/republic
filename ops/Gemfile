@@ -1,0 +1,6 @@
+source 'http://rubygems.org'
+
+gem "barge"
+gem "net-ssh"
+gem "redis"
+gem "thor"
