@@ -74,13 +74,20 @@ class Cluster < Thor
           puts "Not ready #{droplet_name} :: #{ip_address} :: #{status}"
         elsif status=="active"
           begin
+            error = false
             Net::SSH.start(ip_address, "root") do |ssh|
               puts "Provisioning #{droplet_name} :: #{ip_address}"
               provisioning_script.each do |command|
                 stdout_data, stderr_data, exit_code, exit_signal = ssh_exec!(ssh, command)
                 puts "Ran [#{exit_code}] [#{command}]"
+                unless exit_code == 0
+                  error = true
+                  break
+                end
               end
             end
+            redis.hset("#{CLUSTER_NAME}-provisioned-at", droplet_id, Time.now)
+            redis.hset("#{CLUSTER_NAME}-provisioned-status", droplet_id, (error ? "ERROR" : "OK"))
           rescue Errno::ECONNREFUSED
             puts "Not ready #{droplet_name} :: #{ip_address} :: waiting for ssh"
           end
@@ -99,10 +106,10 @@ class Cluster < Thor
       result = barge.droplet.destroy(droplet_id)
       if result.success?
         puts "Destroyed #{droplet_name}"
-        redis.hdel(CLUSTER_NAME, droplet_id)
+        delete_keys_for(droplet_id)
       else
         if result.id=="not_found"
-          redis.hdel("hubothosting-swarm", droplet_id)
+          delete_keys_for(droplet_id)
         end
         puts "Unabled to destroy #{droplet_name}, [#{result.id}] [#{result.message}]"
       end
@@ -123,6 +130,13 @@ class Cluster < Thor
       @keys ||= redis.hkeys(CLUSTER_NAME)
     end
 
+    def delete_keys_for(droplet_id)
+      redis.hdel(CLUSTER_NAME, droplet_id)
+      redis.hdel("#{CLUSTER_NAME}-provisioned-at", droplet_id)
+      redis.hdel("#{CLUSTER_NAME}-provisioned-status", droplet_id)
+    end
+
+    # Credit: http://stackoverflow.com/questions/3386233/how-to-get-exit-status-with-rubys-netssh-library
     def ssh_exec!(ssh, command)
       stdout_data = ""
       stderr_data = ""
