@@ -66,6 +66,7 @@ module Ops
         @machines ||= keys.collect do |droplet_id|
           machine = {id: droplet_id}
           machine[:name] = redis.hget(cluster_type_name, droplet_id)
+          machine[:type] = type_name
           droplet = barge.droplet.show(droplet_id)
           if droplet
             machine[:ip_address] = droplet.droplet.networks["v4"].first.ip_address
@@ -249,34 +250,52 @@ module Ops
 
     desc "inventory", "Generate ansible inventory file in the current directory"
     def inventory
-      File.open("inventory", "w") do |file|
-      load_balancers = LoadBalancer.new.machines
-      unless load_balancers.empty?
-        file.puts "[load_balancer]"
-        load_balancers.each do |machine|
-          file.puts "#{machine[:ip_address]} ansible_ssh_user=root"
-        end
-        file.puts ""
-      end
+      create_inventory_file
+    end
 
-      swarm = Swarm.new.machines
-      unless swarm.empty?
-        file.puts "[swarm]"
-        swarm.each do |machine|
-          file.puts "#{machine[:ip_address]} ansible_ssh_user=root"
-        end
-        file.puts ""
+    desc "destroy_all", "Destroy all machines of any type in the cluster"
+    def destroy_all
+      LoadBalancer.new.destroy
+      Swarm.new.destroy
+      Database.new.destroy
+      if File.exists?("inventory")
+        puts "Removing inventory file"
+        File.delete("inventory")
+      else
+        puts "No inventory file"
       end
+    end
 
-      databases = Database.new.machines
-      unless databases.empty?
-        file.puts "[database]"
-        databases.each do |machine|
-          file.puts "#{machine[:ip_address]} ansible_ssh_user=root"
+    no_tasks do
+      def create_inventory_file
+        File.open("inventory", "w") do |file|
+          load_balancers = LoadBalancer.new.machines
+          unless load_balancers.empty?
+            file.puts "[load_balancer]"
+            load_balancers.each do |machine|
+              file.puts "#{machine[:ip_address]} ansible_ssh_user=root"
+            end
+            file.puts ""
+          end
+
+          swarm = Swarm.new.machines
+          unless swarm.empty?
+            file.puts "[swarm]"
+            swarm.each do |machine|
+              file.puts "#{machine[:ip_address]} ansible_ssh_user=root"
+            end
+            file.puts ""
+          end
+
+          databases = Database.new.machines
+          unless databases.empty?
+            file.puts "[database]"
+            databases.each do |machine|
+              file.puts "#{machine[:ip_address]} ansible_ssh_user=root"
+            end
+            file.puts ""
+          end
         end
-        file.puts ""
-      end
-
       end
     end
   end
