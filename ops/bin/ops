@@ -21,21 +21,19 @@ module Ops
 
     desc "status", "Check the status of machines in the cluster"
     def status
-      puts "None found" if keys.empty?
-      keys.each do |droplet_id|
-        droplet_name = redis.hget(cluster_type_name, droplet_id)
-        result = barge.droplet.show(droplet_id)
-        if result.id == "not_found"
-          puts "#{droplet_name} :: Not Found"
+      puts "No #{type_name} machines" if machines.empty?
+      machines.each do |machine|
+        if machine[:status] == "not_found"
+          puts "#{machine[:name]} :: Not Found"
         else
-          puts "#{droplet_name} :: #{result.droplet.networks["v4"].first.ip_address} :: #{result.droplet.id} :: #{result.droplet.status}"
+          puts "#{machine[:name]} :: #{machine[:ip_address]} :: #{machine[:id]} :: #{machine[:status]}"
         end
       end
     end
 
     desc "destroy", "Destroy the machines in the cluster"
     def destroy
-      puts "None found" if keys.empty?
+      puts "No #{type_name} machines" if keys.empty?
       keys.each do |droplet_id|
         droplet_name = redis.hget(cluster_type_name, droplet_id)
         result = barge.droplet.destroy(droplet_id)
@@ -62,6 +60,23 @@ module Ops
 
       def type_name
         raise "Error: Please set type_name in the subclass"
+      end
+
+      def machines
+        @machines ||= keys.collect do |droplet_id|
+          machine = {id: droplet_id}
+          machine[:name] = redis.hget(cluster_type_name, droplet_id)
+          droplet = barge.droplet.show(droplet_id)
+          if droplet
+            machine[:ip_address] = droplet.droplet.networks["v4"].first.ip_address
+            machine[:status] = droplet.droplet.status
+            machine[:provisioned_status] = redis.hget("#{cluster_type_name}-provisioned-status", droplet_id)
+            machine[:provisioned_at] = redis.hget("#{cluster_type_name}-provisioned-at", droplet_id)
+          else
+            machine[:status] = "not_found"
+          end
+          machine
+        end
       end
 
       def redis
@@ -136,7 +151,7 @@ module Ops
   class LoadBalancer < GeneralCluster
     no_tasks do
       def type_name
-        raise "loadbalancer"
+        "loadbalancer"
       end
     end
   end
@@ -158,7 +173,7 @@ module Ops
         "echo export PATH=$PATH:/opt/gocode/bin >> /etc/bash.bashrc",
         "GOPATH=/opt/gocode go get -u github.com/docker/swarm"
       ]
-      puts "None found" if keys.empty?
+      puts "No #{type_name} machines" if keys.empty?
       keys.each do |droplet_id|
         droplet_name = redis.hget(cluster_type_name, droplet_id)
         result = barge.droplet.show(droplet_id)
@@ -197,7 +212,7 @@ module Ops
 
     no_tasks do
       def type_name
-        raise "swarm"
+        "swarm"
       end
     end
   end
@@ -205,20 +220,65 @@ module Ops
   class Database < GeneralCluster
     no_tasks do
       def type_name
-        raise "database"
+        "database"
       end
     end
   end
 
   class CLI < Thor
-    desc "load_balancer [SUBCOMMAND]", "manage the load balancers"
+    desc "load_balancer [SUBCOMMAND]", "Manage the load balancers"
     subcommand "load_balancer", LoadBalancer
 
-    desc "swarm [SUBCOMMAND]", "manage the swarm machines"
+    desc "swarm [SUBCOMMAND]", "Manage the swarm machines"
     subcommand "swarm", Swarm
 
-    desc "database [SUBCOMMAND]", "manage the database machines"
+    desc "database [SUBCOMMAND]", "Manage the database machines"
     subcommand "database", Database
+
+    desc "status", "Get status of all machine groups"
+    def status
+      machines = [LoadBalancer.new.machines, Swarm.new.machines, Database.new.machines].flatten
+      machines.each do |machine|
+        if machine[:status] == "not_found"
+          puts "#{machine[:name]} :: Not Found"
+        else
+          puts "#{machine[:name]} :: #{machine[:ip_address]} :: #{machine[:id]} :: #{machine[:status]}"
+        end
+      end
+    end
+
+    desc "inventory", "Generate ansible inventory file in the current directory"
+    def inventory
+      File.open("inventory", "w") do |file|
+      load_balancers = LoadBalancer.new.machines
+      unless load_balancers.empty?
+        file.puts "[load_balancer]"
+        load_balancers.each do |machine|
+          file.puts "#{machine[:ip_address]} ansible_ssh_user=root"
+        end
+        file.puts ""
+      end
+
+      swarm = Swarm.new.machines
+      unless swarm.empty?
+        file.puts "[swarm]"
+        swarm.each do |machine|
+          file.puts "#{machine[:ip_address]} ansible_ssh_user=root"
+        end
+        file.puts ""
+      end
+
+      databases = Database.new.machines
+      unless databases.empty?
+        file.puts "[database]"
+        databases.each do |machine|
+          file.puts "#{machine[:ip_address]} ansible_ssh_user=root"
+        end
+        file.puts ""
+      end
+
+      end
+    end
   end
 end
 
