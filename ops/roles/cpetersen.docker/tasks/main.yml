@@ -1,0 +1,41 @@
+---
+
+- name: Add ubuntu keyserver
+  apt_key: keyserver=keyserver.ubuntu.com id=36A1D7869245C8950F966E92D8576A8BA88D21E9
+
+- name: Add docker apt repo
+  apt_repository: repo='deb https://get.docker.com/ubuntu docker main' state=present
+
+- name: Install docker
+  apt: pkg=lxc-docker update_cache=true
+
+- name: Install golang
+  apt: pkg=golang
+
+- name: Creates GOPATH directory
+  file: path=/src/www state=directory
+
+- name: Enable GOPATH to ENV
+  lineinfile: dest=/etc/bash.bashrc regexp="^GOPATH" line="GOPATH=/opt/gocode"
+
+- name: Enable GOPATH to ENV
+  lineinfile: dest=/etc/bash.bashrc regexp="PATH=$PATH:/opt/gocode/bin" line="PATH=$PATH:/opt/gocode/bin"
+
+- name:
+  command: GOPATH=/opt/gocode go get -u github.com/docker/swarm
+  # args:
+  #   creates: 
+
+
+#"apt-get update",
+#"apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys 36A1D7869245C8950F966E92D8576A8BA88D21E9",
+#"echo deb https://get.docker.com/ubuntu docker main > /etc/apt/sources.list.d/docker.list",
+#"apt-get update",
+#"apt-get -y install lxc-docker",
+
+# https://github.com/docker/swarm/
+#"apt-get -y install golang",
+# "mkdir -p /opt/gocode",
+# "echo export GOPATH=/opt/gocode >> /etc/bash.bashrc",
+# "echo export PATH=$PATH:/opt/gocode/bin >> /etc/bash.bashrc",
+# "GOPATH=/opt/gocode go get -u github.com/docker/swarm"

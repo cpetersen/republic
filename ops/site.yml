@@ -26,44 +26,14 @@
           db: "{{datbase_name}}"
           priv: "ALL"
 
-    - role: joshualund.ufw
-      ufw_connection_rate_limits:
-        - {port: 22, protocol: tcp}
-      ufw_whitelisted_ports:
-        - {port: 22, protocol: tcp}
-        - {port: 5432, protocol: tcp}
+    # - role: joshualund.ufw
+    #   ufw_connection_rate_limits:
+    #     - {port: 22, protocol: tcp}
+    #   ufw_whitelisted_ports:
+    #     - {port: 22, protocol: tcp}
+    #     - {port: 5432, protocol: tcp}
 
-- name: ensure load balancers are configured
-  hosts: loadbalancer
-  user: ubuntu
-  sudo: yes
-  vars:
-    database_name: "tutorial"
-    database_user: "tutorialuser"
-    database_password: "PleaseChangeThisToYourPassword"
-    database_hostname: "localhost"
-    database_port: 5432
+- name: ensure swarm is configured
+  hosts: swarm
   roles:
-    - role: ANXS.monit
-      monit_notify_email: "christopher.petersen+monit@gmail.com"
-
-    - role: ANXS.postgresql
-      monit_protection: true
-      postgresql_databases:
-        - name: "{{database_name}}"
-      postgresql_users:
-        - name: "{{database_user}}"
-          pass: "{{database_password}}"
-          encrypted: no
-      postgresql_user_privileges:
-        - name: "{{database_user}}"
-          db: "{{datbase_name}}"
-          priv: "ALL"
-
-    - role: joshualund.ufw
-      ufw_connection_rate_limits:
-        - {port: 22, protocol: tcp}
-      ufw_whitelisted_ports:
-        - {port: 22, protocol: tcp}
-        - {port: 80, protocol: tcp}
-        - {port: 443, protocol: tcp}
+    - role: cpetersen.swarm

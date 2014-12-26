@@ -116,100 +116,100 @@ module Ops
       end
 
       # Credit: http://stackoverflow.com/questions/3386233/how-to-get-exit-status-with-rubys-netssh-library
-      def ssh_exec!(ssh, command)
-        stdout_data = ""
-        stderr_data = ""
-        exit_code = nil
-        exit_signal = nil
-        ssh.open_channel do |channel|
-          channel.exec(command) do |ch, success|
-            unless success
-              abort "FAILED: couldn't execute command (ssh.channel.exec)"
-            end
-            channel.on_data do |ch,data|
-              stdout_data+=data
-            end
+      # def ssh_exec!(ssh, command)
+      #   stdout_data = ""
+      #   stderr_data = ""
+      #   exit_code = nil
+      #   exit_signal = nil
+      #   ssh.open_channel do |channel|
+      #     channel.exec(command) do |ch, success|
+      #       unless success
+      #         abort "FAILED: couldn't execute command (ssh.channel.exec)"
+      #       end
+      #       channel.on_data do |ch,data|
+      #         stdout_data+=data
+      #       end
 
-            channel.on_extended_data do |ch,type,data|
-              stderr_data+=data
-            end
+      #       channel.on_extended_data do |ch,type,data|
+      #         stderr_data+=data
+      #       end
 
-            channel.on_request("exit-status") do |ch,data|
-              exit_code = data.read_long
-            end
+      #       channel.on_request("exit-status") do |ch,data|
+      #         exit_code = data.read_long
+      #       end
 
-            channel.on_request("exit-signal") do |ch, data|
-              exit_signal = data.read_long
-            end
-          end
-        end
-        ssh.loop
-        [stdout_data, stderr_data, exit_code, exit_signal]
-      end
+      #       channel.on_request("exit-signal") do |ch, data|
+      #         exit_signal = data.read_long
+      #       end
+      #     end
+      #   end
+      #   ssh.loop
+      #   [stdout_data, stderr_data, exit_code, exit_signal]
+      # end
     end
   end
 
-  class LoadBalancer < GeneralCluster
-    no_tasks do
-      def type_name
-        "loadbalancer"
-      end
-    end
-  end
+  # class LoadBalancer < GeneralCluster
+  #   no_tasks do
+  #     def type_name
+  #       "loadbalancer"
+  #     end
+  #   end
+  # end
 
   class Swarm < GeneralCluster
-    desc "provision", "Provision the machines in the cluster"
-    def provision
-      provisioning_script = [
-        # https://docs.docker.com/installation/ubuntulinux/
-        "apt-get update",
-        "sudo apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys 36A1D7869245C8950F966E92D8576A8BA88D21E9",
-        "echo deb https://get.docker.com/ubuntu docker main > /etc/apt/sources.list.d/docker.list",
-        "apt-get update",
-        "apt-get -y install lxc-docker",
-        # https://github.com/docker/swarm/
-        "apt-get -y install golang",
-        "mkdir -p /opt/gocode",
-        "echo export GOPATH=/opt/gocode >> /etc/bash.bashrc",
-        "echo export PATH=$PATH:/opt/gocode/bin >> /etc/bash.bashrc",
-        "GOPATH=/opt/gocode go get -u github.com/docker/swarm"
-      ]
-      puts "No #{type_name} machines" if keys.empty?
-      keys.each do |droplet_id|
-        droplet_name = redis.hget(cluster_type_name, droplet_id)
-        result = barge.droplet.show(droplet_id)
-        if result.id == "not_found"
-          puts "#{droplet_name} :: Not Found"
-        else
-          ip_address = result.droplet.networks["v4"].first.ip_address
-          status = result.droplet.status
-          if status=="new"
-            puts "Not ready #{droplet_name} :: #{ip_address} :: #{status}"
-          elsif status=="active"
-            begin
-              error = false
-              Net::SSH.start(ip_address, "root") do |ssh|
-                puts "Provisioning #{droplet_name} :: #{ip_address}"
-                provisioning_script.each do |command|
-                  stdout_data, stderr_data, exit_code, exit_signal = ssh_exec!(ssh, command)
-                  puts "Ran [#{exit_code}] [#{command}]"
-                  unless exit_code == 0
-                    error = true
-                    break
-                  end
-                end
-              end
-              redis.hset("#{cluster_type_name}-provisioned-at", droplet_id, Time.now)
-              redis.hset("#{cluster_type_name}-provisioned-status", droplet_id, (error ? "ERROR" : "OK"))
-            rescue Errno::ECONNREFUSED
-              puts "Not ready #{droplet_name} :: #{ip_address} :: waiting for ssh"
-            end
-          else
-            puts "Unknown status #{droplet_name} :: #{ip_address} :: #{status}"
-          end
-        end
-      end
-    end
+    # desc "provision", "Provision the machines in the cluster"
+    # def provision
+    #   provisioning_script = [
+    #     # https://docs.docker.com/installation/ubuntulinux/
+    #     "apt-get update",
+    #     "sudo apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys 36A1D7869245C8950F966E92D8576A8BA88D21E9",
+    #     "echo deb https://get.docker.com/ubuntu docker main > /etc/apt/sources.list.d/docker.list",
+    #     "apt-get update",
+    #     "apt-get -y install lxc-docker",
+    #     # https://github.com/docker/swarm/
+    #     "apt-get -y install golang",
+    #     "mkdir -p /opt/gocode",
+    #     "echo export GOPATH=/opt/gocode >> /etc/bash.bashrc",
+    #     "echo export PATH=$PATH:/opt/gocode/bin >> /etc/bash.bashrc",
+    #     "GOPATH=/opt/gocode go get -u github.com/docker/swarm"
+    #   ]
+    #   puts "No #{type_name} machines" if keys.empty?
+    #   keys.each do |droplet_id|
+    #     droplet_name = redis.hget(cluster_type_name, droplet_id)
+    #     result = barge.droplet.show(droplet_id)
+    #     if result.id == "not_found"
+    #       puts "#{droplet_name} :: Not Found"
+    #     else
+    #       ip_address = result.droplet.networks["v4"].first.ip_address
+    #       status = result.droplet.status
+    #       if status=="new"
+    #         puts "Not ready #{droplet_name} :: #{ip_address} :: #{status}"
+    #       elsif status=="active"
+    #         begin
+    #           error = false
+    #           Net::SSH.start(ip_address, "root") do |ssh|
+    #             puts "Provisioning #{droplet_name} :: #{ip_address}"
+    #             provisioning_script.each do |command|
+    #               stdout_data, stderr_data, exit_code, exit_signal = ssh_exec!(ssh, command)
+    #               puts "Ran [#{exit_code}] [#{command}]"
+    #               unless exit_code == 0
+    #                 error = true
+    #                 break
+    #               end
+    #             end
+    #           end
+    #           redis.hset("#{cluster_type_name}-provisioned-at", droplet_id, Time.now)
+    #           redis.hset("#{cluster_type_name}-provisioned-status", droplet_id, (error ? "ERROR" : "OK"))
+    #         rescue Errno::ECONNREFUSED
+    #           puts "Not ready #{droplet_name} :: #{ip_address} :: waiting for ssh"
+    #         end
+    #       else
+    #         puts "Unknown status #{droplet_name} :: #{ip_address} :: #{status}"
+    #       end
+    #     end
+    #   end
+    # end
 
     no_tasks do
       def type_name
@@ -227,8 +227,8 @@ module Ops
   end
 
   class CLI < Thor
-    desc "load_balancer [SUBCOMMAND]", "Manage the load balancers"
-    subcommand "load_balancer", LoadBalancer
+    # desc "load_balancer [SUBCOMMAND]", "Manage the load balancers"
+    # subcommand "load_balancer", LoadBalancer
 
     desc "swarm [SUBCOMMAND]", "Manage the swarm machines"
     subcommand "swarm", Swarm
@@ -238,7 +238,12 @@ module Ops
 
     desc "status", "Get status of all machine groups"
     def status
-      machines = [LoadBalancer.new.machines, Swarm.new.machines, Database.new.machines].flatten
+      machines = [
+                    # LoadBalancer.new.machines, 
+                    Swarm.new.machines, 
+                    Database.new.machines
+                  ].flatten
+      puts "Nothing running" if machines.empty?
       machines.each do |machine|
         if machine[:status] == "not_found"
           puts "#{machine[:name]} :: Not Found"
@@ -253,9 +258,17 @@ module Ops
       create_inventory_file
     end
 
+    desc "provision", "Provision the machines in the cluster"
+    def provision
+      create_inventory_file # Make sure inventory is up to date
+      command = "ansible-playbook -i inventory site.yml"
+      puts "Running [#{command}]"
+      # puts `${command}`
+    end
+
     desc "destroy_all", "Destroy all machines of any type in the cluster"
     def destroy_all
-      LoadBalancer.new.destroy
+      # LoadBalancer.new.destroy
       Swarm.new.destroy
       Database.new.destroy
       if File.exists?("inventory")
@@ -269,14 +282,14 @@ module Ops
     no_tasks do
       def create_inventory_file
         File.open("inventory", "w") do |file|
-          load_balancers = LoadBalancer.new.machines
-          unless load_balancers.empty?
-            file.puts "[load_balancer]"
-            load_balancers.each do |machine|
-              file.puts "#{machine[:ip_address]} ansible_ssh_user=root"
-            end
-            file.puts ""
-          end
+          # load_balancers = LoadBalancer.new.machines
+          # unless load_balancers.empty?
+          #   file.puts "[load_balancer]"
+          #   load_balancers.each do |machine|
+          #     file.puts "#{machine[:ip_address]} ansible_ssh_user=root"
+          #   end
+          #   file.puts ""
+          # end
 
           swarm = Swarm.new.machines
           unless swarm.empty?
