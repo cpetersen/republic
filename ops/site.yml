@@ -36,4 +36,4 @@
 - name: ensure swarm is configured
   hosts: swarm
   roles:
-    - role: cpetersen.swarm
+    - role: cpetersen.docker

@@ -19,12 +19,12 @@
   lineinfile: dest=/etc/bash.bashrc regexp="^GOPATH" line="GOPATH=/opt/gocode"
 
 - name: Enable GOPATH to ENV
-  lineinfile: dest=/etc/bash.bashrc regexp="PATH=$PATH:/opt/gocode/bin" line="PATH=$PATH:/opt/gocode/bin"
+  lineinfile: dest=/etc/bash.bashrc regexp="^PATH=\$PATH:\/opt\/gocode\/bin" line="PATH=$PATH:/opt/gocode/bin"
 
-- name:
-  command: GOPATH=/opt/gocode go get -u github.com/docker/swarm
-  # args:
-  #   creates: 
+- name: Install swarm
+  shell: GOPATH=/opt/gocode go get -u github.com/docker/swarm
+  args:
+    creates: /opt/gocode/bin/swarm
 
 
 #"apt-get update",
