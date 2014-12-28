@@ -37,7 +37,7 @@
     #     - {port: 22, protocol: tcp}
     #     - {port: 5432, protocol: tcp}
 
-- name: ensure swarm is configured
-  hosts: swarm
+- name: ensure platform servers are configured
+  hosts: platform
   roles:
     - role: cpetersen.docker

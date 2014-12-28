@@ -18,7 +18,7 @@ module Ops
         result = barge.droplet.create(droplet_options.merge(name: name))
         redis.hset(cluster_type_name, result.droplet.id, result.droplet.name)
       end
-      update_dns if respond_to?(:update_dns)
+      # update_dns if respond_to?(:update_dns)
     end
 
     desc "status", "Check the status of machines in the cluster"
@@ -125,7 +125,7 @@ module Ops
     end
   end
 
-  class Swarm < GeneralCluster
+  class Platform < GeneralCluster
     desc "dns", "Update the dns records"
     def dns
       update_dns
@@ -133,7 +133,7 @@ module Ops
 
     no_tasks do
       def type_name
-        "swarm"
+        "platform"
       end
 
       def route53
@@ -172,8 +172,8 @@ module Ops
   end
 
   class CLI < Thor
-    desc "swarm [SUBCOMMAND]", "Manage the swarm machines"
-    subcommand "swarm", Swarm
+    desc "platform [SUBCOMMAND]", "Manage the platform machines"
+    subcommand "platform", Platform
 
     desc "database [SUBCOMMAND]", "Manage the database machines"
     subcommand "database", Database
@@ -181,7 +181,7 @@ module Ops
     desc "status", "Get status of all machine groups"
     def status
       machines = [
-                    Swarm.new.machines, 
+                    Platform.new.machines, 
                     Database.new.machines
                   ].flatten
       puts "Nothing running" if machines.empty?
@@ -209,7 +209,7 @@ module Ops
 
     desc "destroy_all", "Destroy all machines of any type in the cluster"
     def destroy_all
-      Swarm.new.destroy
+      Platform.new.destroy
       Database.new.destroy
       if File.exists?("inventory")
         puts "Removing inventory file"
@@ -222,10 +222,10 @@ module Ops
     no_tasks do
       def create_inventory_file
         File.open("inventory", "w") do |file|
-          swarm = Swarm.new.machines
-          unless swarm.empty?
-            file.puts "[swarm]"
-            swarm.each do |machine|
+          platform = Platform.new.machines
+          unless platform.empty?
+            file.puts "[platform]"
+            platform.each do |machine|
               file.puts "#{machine[:ip_address]} ansible_ssh_user=root"
             end
             file.puts ""
