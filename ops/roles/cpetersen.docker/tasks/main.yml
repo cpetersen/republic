@@ -13,7 +13,7 @@
   apt: pkg=golang
 
 - name: Creates GOPATH directory
-  file: path=/src/www state=directory
+  file: path=/opt/gocode state=directory
 
 - name: Enable GOPATH to ENV
   lineinfile: dest=/etc/bash.bashrc regexp="^GOPATH" line="GOPATH=/opt/gocode"
