@@ -1,0 +1,13 @@
+---
+
+- name: Golang | Install golang
+  apt: pkg=golang
+
+- name: Golang | Creates GOPATH directory
+  file: path=/opt/gocode state=directory
+
+- name: Golang | Add GOPATH to ENV
+  lineinfile: dest=/etc/bash.bashrc regexp="^GOPATH" line="GOPATH=/opt/gocode"
+
+- name: Golang | Add $GOPATH/bin to PATH
+  lineinfile: dest=/etc/bash.bashrc regexp="^PATH=\$PATH:\/opt\/gocode\/bin" line="PATH=$PATH:/opt/gocode/bin"

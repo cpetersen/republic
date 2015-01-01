@@ -1,0 +1,8 @@
+{
+  "service": 
+  {
+    "name": "swarm", 
+    "tags": ["swarm"], 
+    "port": 2375
+  }
+}

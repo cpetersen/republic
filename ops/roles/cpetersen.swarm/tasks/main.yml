@@ -1,0 +1,20 @@
+---
+
+- name: Swarm | Install swarm
+  shell: GOPATH=/opt/gocode go get -u github.com/docker/swarm
+  args:
+    creates: /opt/gocode/bin/swarm
+
+- name: Swarm | Install the swarm upstart script
+  template:
+    src: swarm.conf
+    dest: /etc/init/swarm.conf
+  notify:
+    - restart swarm
+
+- name: Swarm | Install the swarm consul service
+  template:
+    src: swarm.json
+    dest: /etc/consul.d/swarm.json
+  notify:
+    - restart consul

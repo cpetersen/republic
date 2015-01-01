@@ -2,7 +2,7 @@
 
 galaxy_info:
   author: Chris Petersen
-  description: Install and configure docker
+  description: Install golang
   license: MIT
   min_ansible_version: 1.4
   platforms:
@@ -10,7 +10,5 @@ galaxy_info:
       versions:
         - trusty
   categories:
-    - cloud
-dependencies:
-  - { role: cpetersen.consul }
-
+    - languages
+dependencies: []

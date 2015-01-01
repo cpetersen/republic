@@ -41,4 +41,4 @@
   hosts: platform
   roles:
     - role: cpetersen.consul
-    - role: cpetersen.docker
+    - role: cpetersen.swarm

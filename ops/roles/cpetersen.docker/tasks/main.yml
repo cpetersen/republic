@@ -16,39 +16,9 @@
   notify:
     - restart docker
 
-- name: Docker | Install the docker consul service
-  template:
-    src: docker.json
-    dest: /etc/consul.d/docker.json
-  notify:
-    - restart consul
-
-- name: Golang | Install golang
-  apt: pkg=golang
-
-- name: Golang | Creates GOPATH directory
-  file: path=/opt/gocode state=directory
-
-- name: Golang | Add GOPATH to ENV
-  lineinfile: dest=/etc/bash.bashrc regexp="^GOPATH" line="GOPATH=/opt/gocode"
-
-- name: Golang | Add $GOPATH/bin to PATH
-  lineinfile: dest=/etc/bash.bashrc regexp="^PATH=\$PATH:\/opt\/gocode\/bin" line="PATH=$PATH:/opt/gocode/bin"
-
-- name: Swarm | Install swarm
-  shell: GOPATH=/opt/gocode go get -u github.com/docker/swarm
-  args:
-    creates: /opt/gocode/bin/swarm
-
-#"apt-get update",
-#"apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys 36A1D7869245C8950F966E92D8576A8BA88D21E9",
-#"echo deb https://get.docker.com/ubuntu docker main > /etc/apt/sources.list.d/docker.list",
-#"apt-get update",
-#"apt-get -y install lxc-docker",
-
-# https://github.com/docker/swarm/
-#"apt-get -y install golang",
-# "mkdir -p /opt/gocode",
-# "echo export GOPATH=/opt/gocode >> /etc/bash.bashrc",
-# "echo export PATH=$PATH:/opt/gocode/bin >> /etc/bash.bashrc",
-# "GOPATH=/opt/gocode go get -u github.com/docker/swarm"
+# - name: Docker | Install the docker consul service
+#   template:
+#     src: docker.json
+#     dest: /etc/consul.d/docker.json
+#   notify:
+#     - restart consul

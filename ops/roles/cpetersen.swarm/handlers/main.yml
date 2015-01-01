@@ -7,3 +7,9 @@
   service:
     name: docker
     state: restarted
+
+- name: restart swarm
+  service:
+    name: swarm
+    state: restarted
+

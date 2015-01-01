@@ -2,7 +2,7 @@
 
 galaxy_info:
   author: Chris Petersen
-  description: Install and configure docker
+  description: Install and configure swarm
   license: MIT
   min_ansible_version: 1.4
   platforms:
@@ -11,6 +11,7 @@ galaxy_info:
         - trusty
   categories:
     - cloud
-dependencies:
+dependencies: 
   - { role: cpetersen.consul }
-
+  - { role: cpetersen.docker }
+  - { role: cpetersen.golang }
