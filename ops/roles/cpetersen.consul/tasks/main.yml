@@ -1,21 +1,33 @@
 ---
 
-- name: Install unzip
+- name: Consul | Install unzip
   apt: pkg=unzip
 
-- name: Download consul
+- name: Consul | Download consul
   command: curl -LO https://dl.bintray.com/mitchellh/consul/{{consul_version}}_linux_amd64.zip
   args:
     chdir: /tmp
-    creates: /usr/bin/consul
+    creates: /usr/local/bin/consul
 
-- name: Unzip consul
+- name: Consul | Unzip consul
   command: unzip {{consul_version}}_linux_amd64.zip
   args:
     chdir: /tmp
-    creates: /usr/bin/consul
+    creates: /usr/local/bin/consul
 
-- name: Move consul into /usr/bin
-  command: mv /tmp/consul /usr/bin/consul
+- name: Consul | Move consul into /usr/local/bin
+  command: mv /tmp/consul /usr/local/bin/consul
   args:
-    creates: /usr/bin/consul
+    creates: /usr/local/bin/consul
+  notify:
+    - restart consul
+
+- name: Consul | Creates consul.d directory
+  file: path=/etc/consul.d state=directory
+
+- name: Consul | Install the consul upstart script
+  template:
+    src: consul.conf
+    dest: /etc/init/consul.conf
+  notify:
+    - restart consul

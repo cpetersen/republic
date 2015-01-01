@@ -204,7 +204,7 @@ module Ops
       create_inventory_file # Make sure inventory is up to date
       command = "ansible-playbook -i inventory site.yml"
       puts "Running [#{command}]"
-      # puts `${command}`
+      shell_command(command)
     end
 
     desc "destroy_all", "Destroy all machines of any type in the cluster"
@@ -240,6 +240,16 @@ module Ops
             file.puts ""
           end
         end
+      end
+
+      def shell_command(command)
+        output = []
+        IO.popen(command).each do |line|
+          puts line.chomp
+          STDOUT.flush
+          output << line.chomp
+        end
+        output
       end
     end
   end

@@ -1,0 +1,8 @@
+{
+  "service": 
+  {
+    "name": "docker", 
+    "tags": ["docker"], 
+    "port": 2375
+  }
+}

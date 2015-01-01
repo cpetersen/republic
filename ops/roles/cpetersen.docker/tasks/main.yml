@@ -1,31 +1,44 @@
 ---
 
-- name: Add ubuntu keyserver
+- name: Docker | Add ubuntu keyserver
   apt_key: keyserver=keyserver.ubuntu.com id=36A1D7869245C8950F966E92D8576A8BA88D21E9
 
-- name: Add docker apt repo
+- name: Docker | Add docker apt repo
   apt_repository: repo='deb https://get.docker.com/ubuntu docker main' state=present
 
-- name: Install docker
+- name: Docker | Install docker
   apt: pkg=lxc-docker update_cache=true
 
-- name: Install golang
+- name: Docker | Install the docker upstart script
+  template:
+    src: docker.conf
+    dest: /etc/init/docker.conf
+  notify:
+    - restart docker
+
+- name: Docker | Install the docker consul service
+  template:
+    src: docker.json
+    dest: /etc/consul.d/docker.json
+  notify:
+    - restart consul
+
+- name: Golang | Install golang
   apt: pkg=golang
 
-- name: Creates GOPATH directory
+- name: Golang | Creates GOPATH directory
   file: path=/opt/gocode state=directory
 
-- name: Enable GOPATH to ENV
+- name: Golang | Add GOPATH to ENV
   lineinfile: dest=/etc/bash.bashrc regexp="^GOPATH" line="GOPATH=/opt/gocode"
 
-- name: Enable GOPATH to ENV
+- name: Golang | Add $GOPATH/bin to PATH
   lineinfile: dest=/etc/bash.bashrc regexp="^PATH=\$PATH:\/opt\/gocode\/bin" line="PATH=$PATH:/opt/gocode/bin"
 
-- name: Install swarm
+- name: Swarm | Install swarm
   shell: GOPATH=/opt/gocode go get -u github.com/docker/swarm
   args:
     creates: /opt/gocode/bin/swarm
-
 
 #"apt-get update",
 #"apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys 36A1D7869245C8950F966E92D8576A8BA88D21E9",

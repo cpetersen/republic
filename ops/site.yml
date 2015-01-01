@@ -40,4 +40,5 @@
 - name: ensure platform servers are configured
   hosts: platform
   roles:
+    - role: cpetersen.consul
     - role: cpetersen.docker
