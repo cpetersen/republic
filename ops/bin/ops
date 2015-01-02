@@ -2,9 +2,10 @@
 
 require "aws-sdk"
 require "barge"
-require "thor"
-require "redis"
+require "json"
 require "net/ssh"
+require "redis"
+require "thor"
 
 module Ops
   class GeneralCluster < Thor
@@ -225,6 +226,26 @@ module Ops
         File.delete("inventory")
       else
         puts "No inventory file"
+      end
+    end
+
+    desc "backup", "Backup redis connection"
+    def backup
+      result = {}
+      redis = GeneralCluster.new.redis
+      redis.keys.each do |key|
+        type = redis.type(key)
+        result[key] = case type
+        when "hash"
+          redis.hgetall(key)
+        when "string"
+          redis.get(key)
+        else
+
+        end
+      end
+      File.open("redis.json", "w") do |file|
+        file.puts result.to_json
       end
     end
 
