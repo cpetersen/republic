@@ -1,7 +1,7 @@
-- name: restart consul
+- name: reload consul
   service:
     name: consul
-    state: restarted
+    state: reloaded
 
 - name: restart docker
   service:

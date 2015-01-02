@@ -3,6 +3,6 @@
   {
     "name": "swarm", 
     "tags": ["swarm"], 
-    "port": 2375
+    "port": 4243
   }
 }

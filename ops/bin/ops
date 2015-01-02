@@ -54,7 +54,7 @@ module Ops
           puts "Unabled to destroy #{droplet_name}, [#{result.id}] [#{result.message}]"
         end
       end
-      update_dns if respond_to?(:update_dns)
+      # update_dns if respond_to?(:update_dns)
     end
 
     no_tasks do
@@ -79,8 +79,8 @@ module Ops
           if droplet
             machine[:ip_address] = droplet.droplet.networks["v4"].first.ip_address
             machine[:status] = droplet.droplet.status
-            machine[:provisioned_status] = redis.hget("#{cluster_type_name}-provisioned-status", droplet_id)
-            machine[:provisioned_at] = redis.hget("#{cluster_type_name}-provisioned-at", droplet_id)
+            # machine[:provisioned_status] = redis.hget("#{cluster_type_name}-provisioned-status", droplet_id)
+            # machine[:provisioned_at] = redis.hget("#{cluster_type_name}-provisioned-at", droplet_id)
           else
             machine[:status] = "not_found"
           end
@@ -102,8 +102,8 @@ module Ops
 
       def delete_keys_for(droplet_id)
         redis.hdel(cluster_type_name, droplet_id)
-        redis.hdel("#{cluster_type_name}-provisioned-at", droplet_id)
-        redis.hdel("#{cluster_type_name}-provisioned-status", droplet_id)
+        # redis.hdel("#{cluster_type_name}-provisioned-at", droplet_id)
+        # redis.hdel("#{cluster_type_name}-provisioned-status", droplet_id)
       end
 
       def droplet_options
@@ -202,7 +202,16 @@ module Ops
     desc "provision", "Provision the machines in the cluster"
     def provision
       create_inventory_file # Make sure inventory is up to date
-      command = "ansible-playbook -i inventory site.yml"
+      command = "ansible-playbook -i inventory provision.yml"
+      puts "Running [#{command}]"
+      shell_command(command)
+    end
+
+    desc "join", "Join the cluster"
+    def join
+      create_inventory_file # Make sure inventory is up to date
+      platform_machines = Platform.new.machines
+      command = "ansible-playbook -i inventory join.yml --extra-vars \"ip_address=#{platform_machines.first[:ip_address]}\""
       puts "Running [#{command}]"
       shell_command(command)
     end

@@ -7,7 +7,7 @@
   apt_repository: repo='deb https://get.docker.com/ubuntu docker main' state=present
 
 - name: Docker | Install docker
-  apt: pkg=lxc-docker update_cache=true
+  apt: pkg=lxc-docker
 
 - name: Docker | Install the docker upstart script
   template:
@@ -15,10 +15,3 @@
     dest: /etc/init/docker.conf
   notify:
     - restart docker
-
-# - name: Docker | Install the docker consul service
-#   template:
-#     src: docker.json
-#     dest: /etc/consul.d/docker.json
-#   notify:
-#     - restart consul

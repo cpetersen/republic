@@ -1,0 +1,15 @@
+---
+
+- name: join the consul cluster
+  hosts: platform
+  handlers:
+    - name: restart swarm
+      service:
+        name: swarm
+        state: restarted
+  tasks:
+    - name: join the cluster
+      shell: consul join {{ip_address}}
+      # when: ansible_default_ipv4["address"] != ip_address
+      notify:
+        - restart swarm
