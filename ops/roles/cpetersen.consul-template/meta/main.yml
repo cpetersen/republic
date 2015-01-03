@@ -1,0 +1,15 @@
+---
+
+galaxy_info:
+  author: Chris Petersen
+  description: Install consul-template
+  license: MIT
+  min_ansible_version: 1.4
+  platforms:
+    - name: Ubuntu
+      versions:
+        - trusty
+  categories:
+    - languages
+dependencies:
+  - { role: cpetersen.consul }

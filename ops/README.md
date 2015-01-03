@@ -9,7 +9,7 @@ These are the cluster leaders.
 Leaders do the following:
 
  * Run consul in server mode
- * _Run HAProxy with consul_template to dynamically configure services_
+ * _Run HAProxy with consul-template to dynamically configure services_
  * Are included in the main A record
  * Run docker (including registrator container)
  * Run swarm
@@ -46,4 +46,3 @@ Database servers do the following:
  * Run postgres
  * Manage database backups
 
- 

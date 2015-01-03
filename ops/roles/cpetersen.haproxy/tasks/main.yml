@@ -1,0 +1,4 @@
+---
+
+- name: HAProxy | Install haproxy
+  apt: pkg=haproxy
