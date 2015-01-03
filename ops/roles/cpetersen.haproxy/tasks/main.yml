@@ -2,3 +2,11 @@
 
 - name: HAProxy | Install haproxy
   apt: pkg=haproxy
+
+- name: HAProxy | Install the haproxy upstart script
+  template:
+    src: haproxy.conf
+    dest: /etc/init/haproxy.conf
+  notify:
+    - restart haproxy
+

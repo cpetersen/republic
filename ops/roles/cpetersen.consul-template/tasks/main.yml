@@ -6,30 +6,30 @@
     chdir: /tmp
     creates: /usr/local/bin/consul-template
 
-- name: Consul | Unzip consul_template
+- name: Consul Template | Unzip consul_template
   command: tar xvfz consul-template_{{ consul_template_version }}_linux_amd64.tar.gz
   args:
     chdir: /tmp
     creates: /usr/local/bin/consul-template
 
-- name: Consul | Move consul_template into /usr/local/bin
+- name: Consul Template | Move consul_template into /usr/local/bin
   command: mv /tmp/consul-template_{{ consul_template_version }}_linux_amd64/consul-template /usr/local/bin/consul-template
   args:
     creates: /usr/local/bin/consul-template
   notify:
     - restart consul-template
 
-- name: Consul | Creates consul-template.d directory
+- name: Consul Template | Creates consul-template.d directory
   file: path=/etc/consul-template.d state=directory
 
-- name: Consul | Install the consul-template upstart script
+- name: Consul Template | Install the consul-template upstart script
   template:
     src: consul-template.conf
     dest: /etc/init/consul-template.conf
   notify:
     - restart consul-template
 
-- name: Consul | Install the consul-template config file
+- name: Consul Template | Install the consul-template config file
   template:
     src: consul-template
     dest: /etc/consul-template.d/consul-template
