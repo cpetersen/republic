@@ -1,0 +1,16 @@
+---
+
+- name: manage the swarm
+  hosts: manager
+  handlers:
+    - name: restart swarm-manager
+      service:
+        name: swarm-manager
+        state: restarted
+  tasks:
+    - name: Swarm Manager | Install the swarm manager upstart script
+      template:
+        src: templates/swarm-manager.conf
+        dest: /etc/init/swarm-manager.conf
+      notify:
+        - restart swarm-manager

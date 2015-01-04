@@ -45,3 +45,4 @@
     - role: cpetersen.consul
     - role: cpetersen.swarm
     - role: cpetersen.haproxy
+    - role: cpetersen.registrator

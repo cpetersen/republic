@@ -132,9 +132,35 @@ module Ops
       update_dns
     end
 
+    desc "select_manager NAME", "Select the swarm manager"
+    def select_manager(name)
+      redis.set("#{cluster_name}-manager", name)
+    end
+
+    desc "select_manager NAME", "Select the swarm manager"
+    def manage 
+      CLI.new.create_inventory_file
+      if manager
+        command = "ansible-playbook -i inventory manage.yml"
+        puts "Running [#{command}]"
+        shell_command(command)
+        puts "Set DOCKER_HOST=#{manager[:ip_address]}:2375"
+      else
+        puts "No manager selected. Please use `ops platform select_manager NAME`"
+      end
+    end
+
     no_tasks do
       def type_name
         "platform"
+      end
+
+      def manager
+        unless @manager
+          manager_name = redis.get("#{cluster_name}-manager")
+          @manager = machines.detect { |m| m[:name] == manager_name } if manager_name
+        end
+        @manager
       end
 
       def route53
@@ -259,6 +285,13 @@ module Ops
               file.puts "#{machine[:ip_address]} ansible_ssh_user=root"
             end
             file.puts ""
+          end
+
+          manager = Platform.new.manager
+          if manager
+            file.puts "[manager]"
+            file.puts "#{manager[:ip_address]} ansible_ssh_user=root"            
+            file.puts ""            
           end
 
           databases = Database.new.machines

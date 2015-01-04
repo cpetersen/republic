@@ -13,3 +13,4 @@ galaxy_info:
     - languages
 dependencies:
   - { role: cpetersen.consul-template }
+  - { role: cpetersen.registrator }
