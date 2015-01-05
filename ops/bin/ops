@@ -143,7 +143,7 @@ module Ops
       if manager
         command = "ansible-playbook -i inventory manage.yml"
         puts "Running [#{command}]"
-        shell_command(command)
+        CLI.new.shell_command(command)
         puts "Set DOCKER_HOST=#{manager[:ip_address]}:2375"
       else
         puts "No manager selected. Please use `ops platform select_manager NAME`"
