@@ -275,6 +275,13 @@ module Ops
       end
     end
 
+    desc "config", "Setup client configuration for the platform"
+    def config
+      manager = Platform.new.manager
+      puts "DOCKER_HOST=#{manager[:ip_address]}:2375"if manager
+      create_ssh_config
+    end
+
     no_tasks do
       def create_inventory_file
         File.open("inventory", "w") do |file|
@@ -302,6 +309,34 @@ module Ops
             end
             file.puts ""
           end
+        end
+      end
+
+      def create_ssh_config
+        File.open("#{ENV["HOME"]}/.ssh/ssh.d/4_platform", "w") do |file|
+          platform = Platform.new.machines
+          unless platform.empty?
+            platform.each do |machine|
+              file.puts "Host #{machine[:name]}"
+              file.puts "\tHostname #{machine[:ip_address]}"
+              file.puts "\tUser root"
+              file.puts ""
+              puts "Configured #{machine[:name]}"
+            end
+          end
+
+          databases = Database.new.machines
+          unless databases.empty?
+            databases.each do |machine|
+              file.puts "Host #{machine[:name]}"
+              file.puts "\tHostname #{machine[:ip_address]}"
+              file.puts "\tUser root"
+              file.puts ""
+              puts "Configured #{machine[:name]}"
+            end
+          end
+          file.puts ""
+          file.puts ""
         end
       end
 
