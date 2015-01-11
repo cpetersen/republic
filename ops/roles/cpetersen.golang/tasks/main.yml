@@ -7,7 +7,7 @@
   file: path=/opt/gocode state=directory
 
 - name: Golang | Add GOPATH to ENV
-  lineinfile: dest=/etc/bash.bashrc regexp="^GOPATH" line="GOPATH=/opt/gocode"
+  lineinfile: dest=/etc/bash.bashrc regexp="^export GOPATH" line="export GOPATH=/opt/gocode"
 
 - name: Golang | Add $GOPATH/bin to PATH
-  lineinfile: dest=/etc/bash.bashrc regexp="^PATH=\$PATH:\/opt\/gocode\/bin" line="PATH=$PATH:/opt/gocode/bin"
+  lineinfile: dest=/etc/bash.bashrc regexp="^export PATH=\$PATH:\/opt\/gocode\/bin" line="export PATH=$PATH:/opt/gocode/bin"

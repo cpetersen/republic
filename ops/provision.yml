@@ -10,7 +10,7 @@
     database_hostname: "db.nestedset.com"
     database_port: 5432
   roles:
-    - role: cpetersen.rsyslog
+    # - role: cpetersen.rsyslog
     - role: ANXS.monit
       monit_notify_email: "christopher.petersen+monit@gmail.com"
       monit_mailserver_host: "smtp.mandrillapp.com"
@@ -41,8 +41,8 @@
 - name: ensure platform servers are configured
   hosts: platform
   roles:
-    - role: cpetersen.rsyslog
+    # - role: cpetersen.rsyslog
     - role: cpetersen.consul
     - role: cpetersen.swarm
     - role: cpetersen.haproxy
-    - role: cpetersen.registrator
+    # - role: cpetersen.registrator
