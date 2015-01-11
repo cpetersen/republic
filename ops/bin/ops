@@ -171,35 +171,9 @@ module Ops
       update_dns
     end
 
-    desc "select_manager NAME", "Select the swarm manager"
-    def select_manager(name)
-      redis.set("#{cluster_name}-manager", name)
-    end
-
-    desc "select_manager NAME", "Select the swarm manager"
-    def manage 
-      CLI.new.create_inventory_file
-      if manager
-        command = "ansible-playbook -i inventory manage.yml"
-        puts "Running [#{command}]"
-        CLI.new.shell_command(command)
-        puts "Set DOCKER_HOST=#{manager[:ip_address]}:2375"
-      else
-        puts "No manager selected. Please use `ops platform select_manager NAME`"
-      end
-    end
-
     no_tasks do
       def type_name
         "platform"
-      end
-
-      def manager
-        unless @manager
-          manager_name = redis.get("#{cluster_name}-manager")
-          @manager = machines.detect { |m| m[:name] == manager_name } if manager_name
-        end
-        @manager
       end
 
       def route53
@@ -229,10 +203,10 @@ module Ops
     end
   end
 
-  class Database < GeneralCluster
+  class Worker < GeneralCluster
     no_tasks do
       def type_name
-        "database"
+        "worker"
       end
     end
   end
@@ -241,15 +215,15 @@ module Ops
     desc "platform [SUBCOMMAND]", "Manage the platform machines"
     subcommand "platform", Platform
 
-    desc "database [SUBCOMMAND]", "Manage the database machines"
-    subcommand "database", Database
+    desc "worker [SUBCOMMAND]", "Manage the worker machines"
+    subcommand "worker", Worker
 
     desc "status", "Get status of all machine groups"
     method_option :check_ssh, type: :boolean, aliases: "-s", default: false
     def status
       machines = [
                     Platform.new.machines(options[:check_ssh]),
-                    Database.new.machines(options[:check_ssh])
+                    Worker.new.machines(options[:check_ssh])
                   ].flatten
       puts "Nothing running" if machines.empty?
       machines.each do |machine|
@@ -285,8 +259,9 @@ module Ops
 
     desc "destroy_all", "Destroy all machines of any type in the cluster"
     def destroy_all
-      Platform.new.destroy
-      Database.new.destroy
+      machine_types.each do |klazz|
+        klazz.new.destroy
+      end
       if File.exists?("inventory")
         puts "Removing inventory file"
         File.delete("inventory")
@@ -324,62 +299,41 @@ module Ops
 
     desc "config", "Setup client configuration for the platform"
     def config
-      manager = Platform.new.manager
-      puts "DOCKER_HOST=#{manager[:ip_address]}:2375"if manager
       create_ssh_config
     end
 
     no_tasks do
+      def machine_types
+        [Platform, Worker]
+      end
+
       def create_inventory_file
         File.open("inventory", "w") do |file|
-          platform = Platform.new.machines
-          unless platform.empty?
-            file.puts "[platform]"
-            platform.each do |machine|
-              file.puts "#{machine[:ip_address]} ansible_ssh_user=root"
+          machine_types.each do |klazz|
+            machines = klazz.new.machines
+            unless machines.empty?
+              file.puts "[#{klazz.to_s.downcase}]"
+              platform.each do |machine|
+                file.puts "#{machine[:ip_address]} ansible_ssh_user=root"
+              end
+              file.puts ""
             end
-            file.puts ""
-          end
-
-          manager = Platform.new.manager
-          if manager
-            file.puts "[manager]"
-            file.puts "#{manager[:ip_address]} ansible_ssh_user=root"            
-            file.puts ""            
-          end
-
-          databases = Database.new.machines
-          unless databases.empty?
-            file.puts "[database]"
-            databases.each do |machine|
-              file.puts "#{machine[:ip_address]} ansible_ssh_user=root"
-            end
-            file.puts ""
           end
         end
       end
 
       def create_ssh_config
         File.open("#{ENV["HOME"]}/.ssh/ssh.d/4_platform", "w") do |file|
-          platform = Platform.new.machines
-          unless platform.empty?
-            platform.each do |machine|
-              file.puts "Host #{machine[:name]}"
-              file.puts "\tHostname #{machine[:ip_address]}"
-              file.puts "\tUser root"
-              file.puts ""
-              puts "Configured #{machine[:name]}"
-            end
-          end
-
-          databases = Database.new.machines
-          unless databases.empty?
-            databases.each do |machine|
-              file.puts "Host #{machine[:name]}"
-              file.puts "\tHostname #{machine[:ip_address]}"
-              file.puts "\tUser root"
-              file.puts ""
-              puts "Configured #{machine[:name]}"
+          machine_types.each do |klazz|
+            machines = klazz.new.machines
+            unless machines.empty?
+              machines.each do |machine|
+                file.puts "Host #{machine[:name]}"
+                file.puts "\tHostname #{machine[:ip_address]}"
+                file.puts "\tUser root"
+                file.puts ""
+                puts "Configured #{machine[:name]}"
+              end
             end
           end
           file.puts ""
