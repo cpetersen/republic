@@ -263,7 +263,7 @@ module Ops
     desc "destroy", "Destroy specific machines of any type in the cluster"
     method_option :all, type: :boolean, aliases: "-a", default: false
     def destroy(*args)
-      machine_types.each do |type|
+      machine_types.each do |klazz|
         instance = klazz.new
         redis.hkeys(instance.cluster_type_name).each do |droplet_id|
           droplet_name = redis.hget(instance.cluster_type_name, droplet_id)
