@@ -268,7 +268,7 @@ module Ops
         instance = klazz.new
         redis.hkeys(instance.cluster_type_name).each do |droplet_id|
           droplet_name = redis.hget(instance.cluster_type_name, droplet_id)
-          if args.include?(droplet_name)
+          if(options[:all] || args.include?(droplet_name))
             result = barge.droplet.destroy(droplet_id)
             if result.success?
               puts "Destroyed #{droplet_name}"
@@ -285,25 +285,25 @@ module Ops
       end
     end
 
-    desc "destroy_all", "Destroy all machines of any type in the cluster"
-    def destroy_all
-      machine_types.each do |klazz|
-        klazz.new.destroy
-      end
-      if File.exists?("inventory")
-        puts "Removing inventory file"
-        File.delete("inventory")
-      else
-        puts "No inventory file"
-      end
+    # desc "destroy_all", "Destroy all machines of any type in the cluster"
+    # def destroy_all
+    #   machine_types.each do |klazz|
+    #     klazz.new.destroy
+    #   end
+    #   if File.exists?("inventory")
+    #     puts "Removing inventory file"
+    #     File.delete("inventory")
+    #   else
+    #     puts "No inventory file"
+    #   end
 
-      if File.exists?("#{ENV["HOME"]}/.ssh/ssh.d/4_platform")
-        puts "Removing ssh config file"
-        File.delete("#{ENV["HOME"]}/.ssh/ssh.d/4_platform")
-      else
-        puts "No ssh config file"
-      end
-    end
+    #   if File.exists?("#{ENV["HOME"]}/.ssh/ssh.d/4_platform")
+    #     puts "Removing ssh config file"
+    #     File.delete("#{ENV["HOME"]}/.ssh/ssh.d/4_platform")
+    #   else
+    #     puts "No ssh config file"
+    #   end
+    # end
 
     desc "backup", "Backup redis connection"
     def backup
