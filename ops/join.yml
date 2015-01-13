@@ -7,12 +7,23 @@
       service:
         name: swarm
         state: restarted
+    - name: restart swarm-manager
+      service:
+        name: swarm-manager
+        state: restarted
   tasks:
     - name: join the cluster
       shell: consul join {{ ip_address }}
       # when: ansible_default_ipv4["address"] != ip_address
       notify:
         - restart swarm
+    - name: Swarm Manager | Install the swarm manager upstart script
+      template:
+        src: templates/swarm-manager.conf
+        dest: /etc/init/swarm-manager.conf
+      notify:
+        - restart swarm-manager
+
 
 - name: join the consul cluster
   hosts: worker

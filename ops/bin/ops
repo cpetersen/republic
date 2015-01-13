@@ -77,7 +77,6 @@ module Ops
         redis.hset(cluster_type_name, result.droplet.id, result.droplet.name)
         # redis.hset("#{cluster_type_name}-name-to-id", result.droplet.name, result.droplet.id)
       end
-      # update_dns if respond_to?(:update_dns)
     end
 
     desc "status", "Check the status of machines in the cluster"
@@ -109,7 +108,7 @@ module Ops
           puts "Unabled to destroy #{droplet_name}, [#{result.id}] [#{result.message}]"
         end
       end
-      # update_dns if respond_to?(:update_dns)
+      update_dns if respond_to?(:update_dns)
     end
 
     no_tasks do
@@ -186,7 +185,7 @@ module Ops
       end
 
       def update_dns
-        url = "#{type_name}.nestedset.com."
+        url = "nestedset.com."
         rrset = rrsets[url, "A"]
         resource_records = machines.collect { |m| { value: m[:ip_address] }}
         if resource_records.empty?
@@ -258,6 +257,8 @@ module Ops
       command = "ansible-playbook -i inventory join.yml --extra-vars \"ip_address=#{platform_machines.first[:ip_address]}\""
       puts "Running [#{command}]"
       shell_command(command)
+      puts "Updating A Record"
+      Platform.new.update_dns
     end
 
     desc "destroy", "Destroy specific machines of any type in the cluster"
@@ -280,6 +281,7 @@ module Ops
             end
           end
         end
+        instance.update_dns if instance.respond_to?(:update_dns)
       end
     end
 
