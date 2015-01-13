@@ -27,9 +27,9 @@ module Ops
       end
 
       def delete_keys_for(droplet_id)
+        # name = redis.hget(cluster_type_name, droplet_id)
         redis.hdel(cluster_type_name, droplet_id)
-        # redis.hdel("#{cluster_type_name}-provisioned-at", droplet_id)
-        # redis.hdel("#{cluster_type_name}-provisioned-status", droplet_id)
+        # redis.hdel("#{cluster_type_name}-name-to-id", name) if name
       end
 
       def ssh_exec!(ssh, command)
@@ -75,8 +75,7 @@ module Ops
         puts "Launching #{name}"
         result = barge.droplet.create(droplet_options.merge(name: name))
         redis.hset(cluster_type_name, result.droplet.id, result.droplet.name)
-        redis.hset("#{cluster_type_name}-name-to-id", result.droplet.name, result.droplet.id)
-        redis.hset("#{cluster_type_name}-name-to-ip", result.droplet.name, result.droplet.networks["v4"].first.ip_address)
+        # redis.hset("#{cluster_type_name}-name-to-id", result.droplet.name, result.droplet.id)
       end
       # update_dns if respond_to?(:update_dns)
     end
@@ -223,8 +222,6 @@ module Ops
     method_option :check_ssh, type: :boolean, aliases: "-s", default: false
     method_option :clean, type: :boolean, aliases: "-c", default: false
     def status
-      # machines = machine_types.collect { |klazz| klazz.new.machines(options[:check_ssh]) }.flatten
-      # puts "Nothing running" if machines.empty?
       nothing = true
       machine_types.each do |klazz|
         instance = klazz.new
@@ -267,17 +264,17 @@ module Ops
     method_option :all, type: :boolean, aliases: "-a", default: false
     def destroy(*args)
       machine_types.each do |type|
-        cluster_type_name = "#{cluster_name}-#{type.name.split('::').last.downcase}"
-        redis.hkeys(cluster_type_name).each do |droplet_id|
-          droplet_name = redis.hget(cluster_type_name, droplet_id)
+        instance = klazz.new
+        redis.hkeys(instance.cluster_type_name).each do |droplet_id|
+          droplet_name = redis.hget(instance.cluster_type_name, droplet_id)
           if args.include?(droplet_name)
             result = barge.droplet.destroy(droplet_id)
             if result.success?
               puts "Destroyed #{droplet_name}"
-              delete_keys_for(droplet_id)
+              instance.delete_keys_for(droplet_id)
             else
               if result.id=="not_found"
-                delete_keys_for(droplet_id)
+                instance.delete_keys_for(droplet_id)
               end
               puts "Unabled to destroy #{droplet_name}, [#{result.id}] [#{result.message}]"
             end
