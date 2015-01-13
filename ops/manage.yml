@@ -1,7 +1,7 @@
 ---
 
 - name: manage the swarm
-  hosts: manager
+  hosts: platform
   handlers:
     - name: restart swarm-manager
       service:

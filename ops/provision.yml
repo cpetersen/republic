@@ -1,7 +1,17 @@
 ---
 - name: ensure platform servers are configured
   hosts: platform
+  vars:
+    consul_server: yes
   roles:
     - role: cpetersen.consul
     - role: cpetersen.swarm
     - role: cpetersen.haproxy
+
+- name: ensure worker servers are configured
+  hosts: worker
+  vars:
+    consul_server: no
+  roles:
+    - role: cpetersen.consul
+    - role: cpetersen.swarm

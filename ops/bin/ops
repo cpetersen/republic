@@ -8,93 +8,10 @@ require "redis"
 require "thor"
 
 module Ops
-  class GeneralCluster < Thor
-    desc "add N", "Add machines to the cluster"
-    def add(n)
-      n.to_i.times do
-        redis.incr("#{cluster_type_name}-counter")
-        i = redis.get("#{cluster_type_name}-counter")
-        name = "#{cluster_type_name}-node-#{i}"
-        puts "Launching #{name}"
-        result = barge.droplet.create(droplet_options.merge(name: name))
-        redis.hset(cluster_type_name, result.droplet.id, result.droplet.name)
-      end
-      # update_dns if respond_to?(:update_dns)
-    end
-
-    desc "status", "Check the status of machines in the cluster"
-    method_option :check_ssh, type: :boolean, aliases: "-s", default: false
-    def status
-      puts "No #{type_name} machines" if machines.empty?
-      machines(options[:check_ssh]).each do |machine|
-        if machine[:status] == "not_found"
-          puts "#{machine[:name]} :: Not Found"
-        else
-          puts "#{machine[:name]} :: #{machine[:ip_address]} :: #{machine[:id]} :: #{machine[:status]}"
-        end
-      end
-    end
-
-    # desc "test", "Little task for testing thor environment"
-    # def test
-    #   puts "TEST!"
-    # end
-
-    desc "destroy", "Destroy the machines in the cluster"
-    def destroy
-      puts "No #{type_name} machines" if keys.empty?
-      keys.each do |droplet_id|
-        droplet_name = redis.hget(cluster_type_name, droplet_id)
-        result = barge.droplet.destroy(droplet_id)
-        if result.success?
-          puts "Destroyed #{droplet_name}"
-          delete_keys_for(droplet_id)
-        else
-          if result.id=="not_found"
-            delete_keys_for(droplet_id)
-          end
-          puts "Unabled to destroy #{droplet_name}, [#{result.id}] [#{result.message}]"
-        end
-      end
-      # update_dns if respond_to?(:update_dns)
-    end
-
+  class CommonTasks < Thor
     no_tasks do
-      def cluster_type_name
-        "#{cluster_name}-#{type_name}"
-      end
-
       def cluster_name
         "general"
-      end
-
-      def type_name
-        raise "Error: Please set type_name in the subclass"
-      end
-
-      def machines(check_ssh=false)
-        @machines ||= keys.collect do |droplet_id|
-          machine = {id: droplet_id}
-          machine[:name] = redis.hget(cluster_type_name, droplet_id)
-          machine[:type] = type_name
-          droplet = barge.droplet.show(droplet_id)
-          if droplet
-            machine[:ip_address] = droplet.droplet.networks["v4"].first.ip_address
-            machine[:status] = droplet.droplet.status
-            if(check_ssh && machine[:status]=="active")
-              begin
-                Net::SSH.start(machine[:ip_address], 'root') do |ssh|
-                  ssh_exec!(ssh, "ls")
-                end
-              rescue
-                machine[:status] = "waiting for ssh"
-              end
-            end
-          else
-            machine[:status] = "not_found"
-          end
-          machine
-        end
       end
 
       def redis
@@ -113,23 +30,6 @@ module Ops
         redis.hdel(cluster_type_name, droplet_id)
         # redis.hdel("#{cluster_type_name}-provisioned-at", droplet_id)
         # redis.hdel("#{cluster_type_name}-provisioned-status", droplet_id)
-      end
-
-      def droplet_options
-        {
-          region: "nyc2",
-          size: "512mb",
-          image: "ubuntu-14-04-x64",
-          ssh_keys: [ENV["DIGITALOCEAN_KEY_ID"].to_i],
-          backups: false,
-          ipv6: true,
-          user_data: nil,
-          private_networking: nil
-        }.merge(droplet_modifications)
-      end
-
-      def droplet_modifications
-        {}
       end
 
       def ssh_exec!(ssh, command)
@@ -161,6 +61,107 @@ module Ops
         end
         ssh.loop
         [stdout_data, stderr_data, exit_code, exit_signal]
+      end
+    end
+  end
+
+  class GeneralCluster < CommonTasks
+    desc "add N", "Add machines to the cluster"
+    def add(n)
+      n.to_i.times do
+        redis.incr("#{cluster_type_name}-counter")
+        i = redis.get("#{cluster_type_name}-counter")
+        name = "#{cluster_type_name}-node-#{i}"
+        puts "Launching #{name}"
+        result = barge.droplet.create(droplet_options.merge(name: name))
+        redis.hset(cluster_type_name, result.droplet.id, result.droplet.name)
+        redis.hset("#{cluster_type_name}-name-to-id", result.droplet.name, result.droplet.id)
+        redis.hset("#{cluster_type_name}-name-to-ip", result.droplet.name, result.droplet.networks["v4"].first.ip_address)
+      end
+      # update_dns if respond_to?(:update_dns)
+    end
+
+    desc "status", "Check the status of machines in the cluster"
+    method_option :check_ssh, type: :boolean, aliases: "-s", default: false
+    def status
+      puts "No #{type_name} machines" if machines.empty?
+      machines(options[:check_ssh]).each do |machine|
+        if machine[:status] == "not_found"
+          puts "#{machine[:name]} :: Not Found"
+        else
+          puts "#{machine[:name]} :: #{machine[:ip_address]} :: #{machine[:id]} :: #{machine[:status]}"
+        end
+      end
+    end
+
+    desc "destroy", "Destroy the machines in the cluster"
+    def destroy(*names)
+      puts "No #{type_name} machines" if keys.empty?
+      keys.each do |droplet_id|
+        droplet_name = redis.hget(cluster_type_name, droplet_id)
+        result = barge.droplet.destroy(droplet_id)
+        if result.success?
+          puts "Destroyed #{droplet_name}"
+          delete_keys_for(droplet_id)
+        else
+          if result.id=="not_found"
+            delete_keys_for(droplet_id)
+          end
+          puts "Unabled to destroy #{droplet_name}, [#{result.id}] [#{result.message}]"
+        end
+      end
+      # update_dns if respond_to?(:update_dns)
+    end
+
+    no_tasks do
+      def cluster_type_name
+        "#{cluster_name}-#{type_name}"
+      end
+
+      def type_name
+        raise "Error: Please set type_name in the subclass"
+      end
+
+      def machines(check_ssh=false)
+        @machines ||= keys.collect do |droplet_id|
+          machine = {id: droplet_id}
+          machine[:name] = redis.hget(cluster_type_name, droplet_id)
+          machine[:type] = type_name
+          droplet = barge.droplet.show(droplet_id)
+          if droplet && droplet.droplet
+            machine[:ip_address] = droplet.droplet.networks["v4"].first.ip_address
+            machine[:status] = droplet.droplet.status
+            if(check_ssh && machine[:status]=="active")
+              begin
+                Net::SSH.start(machine[:ip_address], 'root') do |ssh|
+                  ssh_exec!(ssh, "ls")
+                end
+              rescue
+                machine[:status] = "waiting for ssh"
+              end
+            end
+          else
+            machine[:status] = "not_found"
+          end
+          machine
+        end
+      end
+
+      def droplet_options
+        {
+          region: "nyc2",
+          size: "512mb",
+          image: "ubuntu-14-04-x64",
+          ssh_keys: [ENV["DIGITALOCEAN_KEY_ID"].to_i],
+          backups: false,
+          ipv6: true,
+          user_data: nil,
+          private_networking: nil
+        }.merge(droplet_modifications)
+      end
+
+      def droplet_modifications
+        {}
       end
     end
   end
@@ -211,7 +212,7 @@ module Ops
     end
   end
 
-  class CLI < Thor
+  class CLI < CommonTasks
     desc "platform [SUBCOMMAND]", "Manage the platform machines"
     subcommand "platform", Platform
 
@@ -220,19 +221,24 @@ module Ops
 
     desc "status", "Get status of all machine groups"
     method_option :check_ssh, type: :boolean, aliases: "-s", default: false
+    method_option :clean, type: :boolean, aliases: "-c", default: false
     def status
-      machines = [
-                    Platform.new.machines(options[:check_ssh]),
-                    Worker.new.machines(options[:check_ssh])
-                  ].flatten
-      puts "Nothing running" if machines.empty?
-      machines.each do |machine|
-        if machine[:status] == "not_found"
-          puts "#{machine[:name]} :: Not Found"
-        else
-          puts "#{machine[:name]} :: #{machine[:ip_address]} :: #{machine[:id]} :: #{machine[:status]}"
+      # machines = machine_types.collect { |klazz| klazz.new.machines(options[:check_ssh]) }.flatten
+      # puts "Nothing running" if machines.empty?
+      nothing = true
+      machine_types.each do |klazz|
+        instance = klazz.new
+        instance.machines(options[:check_ssh]).each do |machine|
+          nothing = false
+          if machine[:status] == "not_found"
+            puts "#{machine[:name]} :: Not Found"
+            instance.delete_keys_for(machine[:id]) if options[:clean]
+          else
+            puts "#{machine[:name]} :: #{machine[:ip_address]} :: #{machine[:id]} :: #{machine[:status]}"
+          end
         end
       end
+      puts "Nothing running" if nothing
     end
 
     desc "inventory", "Generate ansible inventory file in the current directory"
@@ -255,6 +261,29 @@ module Ops
       command = "ansible-playbook -i inventory join.yml --extra-vars \"ip_address=#{platform_machines.first[:ip_address]}\""
       puts "Running [#{command}]"
       shell_command(command)
+    end
+
+    desc "destroy", "Destroy specific machines of any type in the cluster"
+    method_option :all, type: :boolean, aliases: "-a", default: false
+    def destroy(*args)
+      machine_types.each do |type|
+        cluster_type_name = "#{cluster_name}-#{type.name.split('::').last.downcase}"
+        redis.hkeys(cluster_type_name).each do |droplet_id|
+          droplet_name = redis.hget(cluster_type_name, droplet_id)
+          if args.include?(droplet_name)
+            result = barge.droplet.destroy(droplet_id)
+            if result.success?
+              puts "Destroyed #{droplet_name}"
+              delete_keys_for(droplet_id)
+            else
+              if result.id=="not_found"
+                delete_keys_for(droplet_id)
+              end
+              puts "Unabled to destroy #{droplet_name}, [#{result.id}] [#{result.message}]"
+            end
+          end
+        end
+      end
     end
 
     desc "destroy_all", "Destroy all machines of any type in the cluster"
@@ -280,7 +309,6 @@ module Ops
     desc "backup", "Backup redis connection"
     def backup
       result = {}
-      redis = GeneralCluster.new.redis
       redis.keys.each do |key|
         type = redis.type(key)
         result[key] = case type
@@ -310,10 +338,10 @@ module Ops
       def create_inventory_file
         File.open("inventory", "w") do |file|
           machine_types.each do |klazz|
-            machines = klazz.new.machines
-            unless machines.empty?
-              file.puts "[#{klazz.to_s.downcase}]"
-              platform.each do |machine|
+            _machines = klazz.new.machines
+            unless _machines.empty?
+              file.puts "[#{klazz.name.split('::').last.downcase}]"
+              _machines.each do |machine|
                 file.puts "#{machine[:ip_address]} ansible_ssh_user=root"
               end
               file.puts ""

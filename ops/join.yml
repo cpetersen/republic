@@ -9,7 +9,21 @@
         state: restarted
   tasks:
     - name: join the cluster
-      shell: consul join {{ip_address}}
+      shell: consul join {{ ip_address }}
+      # when: ansible_default_ipv4["address"] != ip_address
+      notify:
+        - restart swarm
+
+- name: join the consul cluster
+  hosts: worker
+  handlers:
+    - name: restart swarm
+      service:
+        name: swarm
+        state: restarted
+  tasks:
+    - name: join the cluster
+      shell: consul join {{ ip_address }}
       # when: ansible_default_ipv4["address"] != ip_address
       notify:
         - restart swarm
