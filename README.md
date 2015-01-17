@@ -24,40 +24,50 @@ swarm manage --discovery consul://localhost:8500/v1/catalog/service/swarm -H=107
 
 swarm list --discovery consul://localhost:8500/v1/catalog/service/swarm
 
-
-
-
-
 docker -H 104.131.230.67:4243 run -d -e "DOCKER_HOST=104.131.230.67:4243" -h $HOSTNAME progrium/registrator consul:
 docker -H 104.131.230.67:4243 run -d -e "DOCKER_HOST=104.131.230.67:4243" -h $HOSTNAME progrium/registrator consul://104.131.230.67:8500
 
+
+MODULES
+=======
+
+Hosting: DigitalOcean
+Provisioning: Ansible
+Service Discovery: Consul
+Containers: Docker
+Load Balancing HAProxy
+DNS: Route53
+
+
+DOCKER REGISTRY
+===============
+
+docker run \
+         -e SETTINGS_FLAVOR=s3 \
+         -e AWS_BUCKET=nestedset-docker-registry \
+         -e STORAGE_PATH=/registry \
+         -e AWS_KEY=$AWS_ACCESS_KEY_ID \
+         -e AWS_SECRET=$AWS_SECRET_ACCESS_KEY \
+         -p 5000:5000 \
+         registry
+
+
+
 OPS TODO
 ========
-Bring back ssh check ("active" vs "waiting for ssh")
-  Make swarm manage work (can't reach swarm workers)
-  Add HAProxy
 Add consul-template and HAProxy template
-Add tls for swarm
-Add tls for consul
-ops X destroy should take node name parameters
-ops destroy_all should become destroy and should take node name parameters as well as --all flag
-create ops platform elect-leader
-move ops join to ops platform join
-ops join should take node name parameters
-can all leaders run manager? Make part of join (and remove manage and select_manager steps)?
-Get rid of db, simplify ops script
+Add tls for swarm/consul
 Add volumes and volume backups... somehow.
+Add docker container for consul-ui
+Add docker container for postgres
+
 
 ops platform add 3
+ops worker add 2
 ops status
 --- wait ---
 ops provision
 ops join
-ops platform select_manager NAME
-ops platform manage
-
-# ops platform elect-leader # Doesn' exist yet
-# ops platform join # should move under platform
 
 
 
@@ -72,7 +82,6 @@ Finish platform
 Move cilantro attachments to s3
 Move cilantro to platform
 hubothosting on platform
-fastforward on platform
 Thank you card app - lob.com
 dropsearch (personal search engine, rebuild greplin)
 Markdownplus (julia microservice?)

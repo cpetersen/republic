@@ -109,6 +109,7 @@ module Ops
         end
       end
       update_dns if respond_to?(:update_dns)
+      update_ssh_config
     end
 
     no_tasks do
@@ -118,6 +119,10 @@ module Ops
 
       def type_name
         raise "Error: Please set type_name in the subclass"
+      end
+
+      def machines?
+        keys && keys.size > 0
       end
 
       def machines(check_ssh=false)
@@ -160,6 +165,25 @@ module Ops
 
       def droplet_modifications
         {}
+      end
+
+      def update_ssh_config
+        filename = "#{ENV["HOME"]}/.ssh/ssh.d/99_#{type_name}"
+        if machines?
+          File.open(filename, "w") do |file|
+            machines.each do |machine|
+              file.puts "Host #{machine[:name]}"
+              file.puts "\tHostname #{machine[:ip_address]}"
+              file.puts "\tUser root"
+              file.puts ""
+              puts "Configured #{machine[:name]}"
+            end
+            file.puts ""
+            file.puts ""
+          end
+        else
+          File.delete(filename) if File.exists?(filename)
+        end
       end
     end
   end
@@ -239,12 +263,12 @@ module Ops
 
     desc "inventory", "Generate ansible inventory file in the current directory"
     def inventory
-      create_inventory_file
+      update_inventory_file
     end
 
     desc "provision", "Provision the machines in the cluster"
     def provision
-      create_inventory_file # Make sure inventory is up to date
+      update_inventory_file # Make sure inventory is up to date
       command = "ansible-playbook -i inventory provision.yml"
       puts "Running [#{command}]"
       shell_command(command)
@@ -252,7 +276,7 @@ module Ops
 
     desc "join", "Join the cluster"
     def join
-      create_inventory_file # Make sure inventory is up to date
+      update_inventory_file # Make sure inventory is up to date
       platform_machines = Platform.new.machines
       command = "ansible-playbook -i inventory join.yml --extra-vars \"ip_address=#{platform_machines.first[:ip_address]}\""
       puts "Running [#{command}]"
@@ -283,27 +307,9 @@ module Ops
         end
         instance.update_dns if instance.respond_to?(:update_dns)
       end
+      update_inventory_file
+      update_ssh_config
     end
-
-    # desc "destroy_all", "Destroy all machines of any type in the cluster"
-    # def destroy_all
-    #   machine_types.each do |klazz|
-    #     klazz.new.destroy
-    #   end
-    #   if File.exists?("inventory")
-    #     puts "Removing inventory file"
-    #     File.delete("inventory")
-    #   else
-    #     puts "No inventory file"
-    #   end
-
-    #   if File.exists?("#{ENV["HOME"]}/.ssh/ssh.d/4_platform")
-    #     puts "Removing ssh config file"
-    #     File.delete("#{ENV["HOME"]}/.ssh/ssh.d/4_platform")
-    #   else
-    #     puts "No ssh config file"
-    #   end
-    # end
 
     desc "backup", "Backup redis connection"
     def backup
@@ -326,7 +332,7 @@ module Ops
 
     desc "config", "Setup client configuration for the platform"
     def config
-      create_ssh_config
+      update_ssh_config
     end
 
     no_tasks do
@@ -334,38 +340,31 @@ module Ops
         [Platform, Worker]
       end
 
-      def create_inventory_file
-        File.open("inventory", "w") do |file|
-          machine_types.each do |klazz|
-            _machines = klazz.new.machines
-            unless _machines.empty?
-              file.puts "[#{klazz.name.split('::').last.downcase}]"
-              _machines.each do |machine|
-                file.puts "#{machine[:ip_address]} ansible_ssh_user=root"
+      def machines?
+        machine_types.inject(false) { |memo, klazz| klazz.new.machines? || memo }
+      end
+
+      def update_inventory_file
+        if machines?
+          File.open("inventory", "w") do |file|
+            machine_types.each do |klazz|
+              _machines = klazz.new.machines
+              unless _machines.empty?
+                file.puts "[#{klazz.name.split('::').last.downcase}]"
+                _machines.each do |machine|
+                  file.puts "#{machine[:ip_address]} ansible_ssh_user=root"
+                end
+                file.puts ""
               end
-              file.puts ""
             end
           end
+        else
+          File.delete("inventory")
         end
       end
 
-      def create_ssh_config
-        File.open("#{ENV["HOME"]}/.ssh/ssh.d/4_platform", "w") do |file|
-          machine_types.each do |klazz|
-            machines = klazz.new.machines
-            unless machines.empty?
-              machines.each do |machine|
-                file.puts "Host #{machine[:name]}"
-                file.puts "\tHostname #{machine[:ip_address]}"
-                file.puts "\tUser root"
-                file.puts ""
-                puts "Configured #{machine[:name]}"
-              end
-            end
-          end
-          file.puts ""
-          file.puts ""
-        end
+      def update_ssh_config
+        machine_types.each { |klazz| klazz.new.update_ssh_config }
       end
 
       def shell_command(command)
