@@ -167,7 +167,7 @@ module Ops
         {}
       end
 
-      def update_ssh_config
+      def update_ssh_config(verbose=false)
         filename = "#{ENV["HOME"]}/.ssh/ssh.d/99_#{type_name}"
         if machines?
           File.open(filename, "w") do |file|
@@ -176,7 +176,7 @@ module Ops
               file.puts "\tHostname #{machine[:ip_address]}"
               file.puts "\tUser root"
               file.puts ""
-              puts "Configured #{machine[:name]}"
+              puts "Configured #{machine[:name]}" if verbose
             end
             file.puts ""
             file.puts ""
@@ -285,9 +285,10 @@ module Ops
       Platform.new.update_dns
     end
 
-    desc "destroy", "Destroy specific machines of any type in the cluster"
+    desc "destroy NAME", "Destroy specific machines of any type in the cluster"
     method_option :all, type: :boolean, aliases: "-a", default: false
     def destroy(*args)
+      (help(:destroy) && exit) if(args.size==0 && !options[:all])
       machine_types.each do |klazz|
         instance = klazz.new
         redis.hkeys(instance.cluster_type_name).each do |droplet_id|
@@ -332,7 +333,7 @@ module Ops
 
     desc "config", "Setup client configuration for the platform"
     def config
-      update_ssh_config
+      update_ssh_config(true)
     end
 
     no_tasks do
@@ -363,8 +364,8 @@ module Ops
         end
       end
 
-      def update_ssh_config
-        machine_types.each { |klazz| klazz.new.update_ssh_config }
+      def update_ssh_config(verbose=false)
+        machine_types.each { |klazz| klazz.new.update_ssh_config(verbose) }
       end
 
       def shell_command(command)
