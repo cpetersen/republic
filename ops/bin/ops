@@ -93,22 +93,25 @@ module Ops
     end
 
     desc "destroy", "Destroy the machines in the cluster"
-    def destroy(*names)
-      puts "No #{type_name} machines" if keys.empty?
+    method_option :all, type: :boolean, aliases: "-a", default: false
+    def destroy(*args)
+      (help(:destroy) && exit) if(args.size==0 && !options[:all])
       keys.each do |droplet_id|
         droplet_name = redis.hget(cluster_type_name, droplet_id)
-        result = barge.droplet.destroy(droplet_id)
-        if result.success?
-          puts "Destroyed #{droplet_name}"
-          delete_keys_for(droplet_id)
-        else
-          if result.id=="not_found"
+        if(options[:all] || args.include?(droplet_name))
+          result = barge.droplet.destroy(droplet_id)
+          if result.success?
+            puts "Destroyed #{droplet_name}"
             delete_keys_for(droplet_id)
+          else
+            if result.id=="not_found"
+              delete_keys_for(droplet_id)
+            end
+            puts "Unabled to destroy #{droplet_name}, [#{result.id}] [#{result.message}]"
           end
-          puts "Unabled to destroy #{droplet_name}, [#{result.id}] [#{result.message}]"
         end
       end
-      update_dns if respond_to?(:update_dns)
+      update_dns
       update_ssh_config
     end
 
@@ -184,6 +187,10 @@ module Ops
         else
           File.delete(filename) if File.exists?(filename)
         end
+      end
+
+      def update_dns
+        # NoOp (overriden in Platform)
       end
     end
   end
@@ -306,10 +313,10 @@ module Ops
             end
           end
         end
-        instance.update_dns if instance.respond_to?(:update_dns)
+        instance.update_dns
+        instance.update_ssh_config
       end
       update_inventory_file
-      update_ssh_config
     end
 
     desc "backup", "Backup redis connection"
