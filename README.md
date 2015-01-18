@@ -42,15 +42,19 @@ DNS: Route53
 DOCKER REGISTRY
 ===============
 
-docker run \
-         -e SETTINGS_FLAVOR=s3 \
-         -e AWS_BUCKET=nestedset-docker-registry \
-         -e STORAGE_PATH=/registry \
-         -e AWS_KEY=$AWS_ACCESS_KEY_ID \
-         -e AWS_SECRET=$AWS_SECRET_ACCESS_KEY \
-         -p 5000:5000 \
-         registry
+docker run -d \
+        --name=registry
+        -e SETTINGS_FLAVOR=s3 \
+        -e AWS_BUCKET=nestedset-docker-registry \
+        -e STORAGE_PATH=/registry \
+        -e AWS_KEY=$AWS_ACCESS_KEY_ID \
+        -e AWS_SECRET=$AWS_SECRET_ACCESS_KEY \
+        -e SEARCH_BACKEND=sqlalchemy \
+        -p 5000:5000 \
+        registry
 
+
+docker push 104.131.230.67:5000/hubothosting
 
 
 OPS TODO
@@ -127,14 +131,16 @@ popd ~/.tls
 RUN SOME CONTAINERS
 ===================
 
-docker -H 107.170.121.184:2375 run -d --name redis.0 -p 10000:6379 dockerfile/redis
-docker -H 107.170.121.184:2375 run -d --name redis.1 -p 10001:6379 dockerfile/redis
-docker -H 107.170.121.184:2375 run -d --name redis.2 -p 10002:6379 dockerfile/redis
-docker -H 107.170.121.184:2375 run -d --name redis.3 -p 10003:6379 dockerfile/redis
-docker -H 107.170.121.184:2375 run -d --name redis.4 -p 10004:6379 dockerfile/redis
-docker -H 107.170.121.184:2375 run -d --name redis.5 -p 10005:6379 dockerfile/redis
-docker -H 107.170.121.184:2375 run -d --name redis.6 -p 10006:6379 dockerfile/redis
-docker -H 107.170.121.184:2375 run -d --name redis.7 -p 10007:6379 dockerfile/redis
-docker -H 107.170.121.184:2375 run -d --name redis.8 -p 10008:6379 dockerfile/redis
-docker -H 107.170.121.184:2375 run -d --name redis.9 -p 10009:6379 dockerfile/redis
+export DOCKER_HOST=tcp://162.243.105.198:2375
+docker run -d --name redis.0 -p 10000:6379 dockerfile/redis
+docker run -d --name redis.1 -p 10001:6379 dockerfile/redis
+docker run -d --name redis.2 -p 10002:6379 dockerfile/redis
+docker run -d --name redis.3 -p 10003:6379 dockerfile/redis
+docker run -d --name redis.4 -p 10004:6379 dockerfile/redis
+docker run -d --name redis.5 -p 10005:6379 dockerfile/redis
+docker run -d --name redis.6 -p 10006:6379 dockerfile/redis
+docker run -d --name redis.7 -p 10007:6379 dockerfile/redis
+docker run -d --name redis.8 -p 10008:6379 dockerfile/redis
+docker run -d --name redis.9 -p 10009:6379 dockerfile/redis
 
+docker run -d --name redis.9 -p 10009:6379 dockerfile/redis
