@@ -1,0 +1,4 @@
+- name: restart registrator
+  service:
+    name: registrator
+    state: restarted

@@ -7,6 +7,8 @@
     - role: cpetersen.consul
     - role: cpetersen.swarm
     - role: cpetersen.haproxy
+    - role: cpetersen.rsyslog
+    - role: cpetersen.registrator
 
 - name: ensure worker servers are configured
   hosts: worker
@@ -15,3 +17,5 @@
   roles:
     - role: cpetersen.consul
     - role: cpetersen.swarm
+    - role: cpetersen.rsyslog
+    - role: cpetersen.registrator

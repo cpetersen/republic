@@ -25,13 +25,21 @@
   shell: docker -H {{ ansible_default_ipv4.address }}:4243 ps -a
   register: docker_contents
 
-- name: Docker | Launch registrator
-  shell: DOCKER_HOST={{ ansible_default_ipv4.address }}:4243 docker run -d --env=DOCKER_HOST=http://{{ ansible_default_ipv4.address }}:4243 --restart=always --name=registrator progrium/registrator consul://{{ ansible_default_ipv4.address }}:8500
-  when: docker_contents.stdout.find('registrator') == -1
+# - name: Docker | Launch registrator
+#   shell: DOCKER_HOST={{ ansible_default_ipv4.address }}:4243 docker run -d --env=DOCKER_HOST=http://{{ ansible_default_ipv4.address }}:4243 --restart=always --name=registrator progrium/registrator consul://{{ ansible_default_ipv4.address }}:8500
+#   when: docker_contents.stdout.find('registrator') == -1
 
 - name: Docker | Launch logspout
-  shell: DOCKER_HOST={{ ansible_default_ipv4.address }}:4243 docker run -d --env=DOCKER_HOST=http://{{ ansible_default_ipv4.address }}:4243 --restart=always --name=logspout progrium/logspout syslog://logs.papertrailapp.com:38814
+  shell: DOCKER_HOST={{ ansible_default_ipv4.address }}:4243 docker run -d --env=DOCKER_HOST=http://{{ ansible_default_ipv4.address }}:4243 --restart=always -p 8000:8000 --name=logspout progrium/logspout
   when: docker_contents.stdout.find('logspout') == -1
+
+# - name: Docker | Check logspout routes
+#   shell: curl localhost:8000/routes
+#   register: logspouts_contents
+
+# - name: Docker | Register legentries logspout route
+#   shell: curl localhost:8000/routes -X POST -d '{"target": {"type": "rfc5424", "addr": "api.logentries.com:10000", "structured_data": "e111fb1e-3d4d-44b5-a61a-8fa6c610cdf8"}}'
+#   when: docker_contents.stdout.find('logentries') == -1
 
 - name: Docker | Add DOCKER_HOST to ENV
   lineinfile: dest=/etc/bash.bashrc regexp="^export DOCKER_HOST" line="export DOCKER_HOST=tcp://{{ ansible_default_ipv4.address }}:4243"
