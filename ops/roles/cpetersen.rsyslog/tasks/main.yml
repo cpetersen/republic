@@ -4,7 +4,7 @@
   apt: pkg=rsyslog
 
 - name: Rsyslog | Add logentries config entry
-  lineinfile: dest=/etc/rsyslog.conf regexp="template Logentries" line="$template Logentries,\"e111fb1e-3d4d-44b5-a61a-8fa6c610cdf8 %HOSTNAME% %syslogtag%%msg%\\n\""
+  lineinfile: dest=/etc/rsyslog.conf regexp="template Logentries" line="$template Logentries,\"e111fb1e-3d4d-44b5-a61a-8fa6c610cdf8 %HOSTNAME% %syslogtag%%msg%\\\n\""
   notify: restart rsyslog
 
 - name: Rsyslog | Add logentries config entry
