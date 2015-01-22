@@ -74,8 +74,13 @@ module Ops
         name = "#{cluster_type_name}-node-#{i}"
         puts "Launching #{name}"
         result = barge.droplet.create(droplet_options.merge(name: name))
-        redis.hset(cluster_type_name, result.droplet.id, result.droplet.name)
-        # redis.hset("#{cluster_type_name}-name-to-id", result.droplet.name, result.droplet.id)
+        if result.droplet
+          redis.hset(cluster_type_name, result.droplet.id, result.droplet.name)
+          # redis.hset("#{cluster_type_name}-name-to-id", result.droplet.name, result.droplet.id)
+        else
+          puts "Error with [#{name}]"
+          puts result.inspect
+        end
       end
     end
 
@@ -160,7 +165,7 @@ module Ops
           image: "ubuntu-14-04-x64",
           ssh_keys: [ENV["DIGITALOCEAN_KEY_ID"].to_i],
           backups: false,
-          ipv6: true,
+          ipv6: false,
           user_data: nil,
           private_networking: nil
         }.merge(droplet_modifications)
