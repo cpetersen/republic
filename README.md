@@ -132,13 +132,15 @@ RUN SOME CONTAINERS
 ===================
 
 export DOCKER_HOST=tcp://162.243.105.198:2375
-docker run -d -e "SERVICE_NAME=db" -e "SERVICE_TAGS=master,backups" --name redis.0 -p 10000:6379 dockerfile/redis
-docker run -d -e "SERVICE_NAME=db" -e "SERVICE_TAGS=master,backups" --name redis.1 -p 10001:6379 dockerfile/redis
-docker run -d -e "SERVICE_NAME=db" -e "SERVICE_TAGS=master,backups" --name redis.2 -p 10002:6379 dockerfile/redis
-docker run -d -e "SERVICE_NAME=db" -e "SERVICE_TAGS=master,backups" --name redis.3 -p 10003:6379 dockerfile/redis
-docker run -d -e "SERVICE_NAME=db" -e "SERVICE_TAGS=master,backups" --name redis.4 -p 10004:6379 dockerfile/redis
-docker run -d -e "SERVICE_NAME=db" -e "SERVICE_TAGS=master,backups" --name redis.5 -p 10005:6379 dockerfile/redis
-docker run -d -e "SERVICE_NAME=db" -e "SERVICE_TAGS=master,backups" --name redis.6 -p 10006:6379 dockerfile/redis
-docker run -d -e "SERVICE_NAME=db" -e "SERVICE_TAGS=master,backups" --name redis.7 -p 10007:6379 dockerfile/redis
-docker run -d -e "SERVICE_NAME=db" -e "SERVICE_TAGS=master,backups" --name redis.8 -p 10008:6379 dockerfile/redis
-docker run -d -e "SERVICE_NAME=db" -e "SERVICE_TAGS=master,backups" --name redis.9 -p 10009:6379 dockerfile/redis
+docker run -d -e "SERVICE_NAME=db" -e "SERVICE_TAGS=redis" --name=redis.0 -p 10000:6379 dockerfile/redis
+docker run -d -e "SERVICE_NAME=db" -e "SERVICE_TAGS=redis" --name=redis.1 -p 10001:6379 dockerfile/redis
+docker run -d -e "SERVICE_NAME=db" -e "SERVICE_TAGS=redis" --name=redis.2 -p 10002:6379 dockerfile/redis
+docker run -d -e "SERVICE_NAME=db" -e "SERVICE_TAGS=redis" --name=redis.3 -p 10003:6379 dockerfile/redis
+docker run -d -e "SERVICE_NAME=db2" -e "SERVICE_TAGS=redis" --name=redis.4 -p 10004:6379 dockerfile/redis
+docker run -d -e "SERVICE_NAME=db2" -e "SERVICE_TAGS=redis" --name=redis.5 -p 10005:6379 dockerfile/redis
+docker run -d -e "SERVICE_NAME=db2" -e "SERVICE_TAGS=redis" --name=redis.6 -p 10006:6379 dockerfile/redis
+docker run -d -e "SERVICE_NAME=db3" -e "SERVICE_TAGS=redis" --name=redis.7 -p 10007:6379 dockerfile/redis
+docker run -d -e "SERVICE_NAME=db3" -e "SERVICE_TAGS=redis" --name=redis.8 -p 10008:6379 dockerfile/redis
+docker run -d -e "SERVICE_NAME=db3" -e "SERVICE_TAGS=redis" --name=redis.9 -p 10009:6379 dockerfile/redis
+
+

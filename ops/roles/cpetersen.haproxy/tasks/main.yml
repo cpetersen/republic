@@ -4,11 +4,11 @@
   apt: pkg=haproxy
 
 - name: HAProxy | Install the haproxy config template
-  template:
+  copy:
     src: haproxy.cfg.ctmpl
     dest: /etc/haproxy/haproxy.cfg.ctmpl
   notify:
-    - restart consul-template
+    - restart haproxy
 
 - name: HAProxy | Install the haproxy consul-template config
   template:

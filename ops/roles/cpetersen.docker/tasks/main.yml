@@ -30,7 +30,7 @@
 #   when: docker_contents.stdout.find('registrator') == -1
 
 - name: Docker | Launch logspout
-  shell: DOCKER_HOST={{ ansible_default_ipv4.address }}:4243 docker run -d --env=DOCKER_HOST=http://{{ ansible_default_ipv4.address }}:4243 --restart=always -p 8000:8000 --name=logspout progrium/logspout
+  shell: DOCKER_HOST={{ ansible_default_ipv4.address }}:4243 docker run -d --env=DOCKER_HOST=http://{{ ansible_default_ipv4.address }}:4243 -e "SERVICE_NAME=logspout" -e "SERVICE_TAGS=http" --restart=always -p 8000:8000 --name=logspout progrium/logspout
   when: docker_contents.stdout.find('logspout') == -1
 
 - name: Docker | Check logspout routes

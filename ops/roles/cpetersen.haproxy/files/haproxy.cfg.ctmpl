@@ -8,14 +8,14 @@ global
 
 frontend http-in
   bind *:80
-{{range services}}{{$name := .Name}}{{range $tag, $services := service .Name | byTag}}{{if eq $tag "http"}}  acl is_{{$name}}_redis hdr_end(host) -i {{$name}}.nestedset.com
+{{range services}}{{$name := .Name}}{{range $tag, $services := service .Name | byTag}}{{if eq $tag "http"}}  acl is_{{$name}}_http hdr_end(host) -i {{$name}}.nestedset.com
 {{end}}{{end}}{{end}}
 {{range services}}{{$name := .Name}}{{range $tag, $services := service .Name | byTag}}{{if eq $tag "http"}}  use_backend {{$name}}_backend if is_{{$name}}_http
 {{end}}{{end}}{{end}}
 
 frontend https-in
   bind *:443
-{{range services}}{{$name := .Name}}{{range $tag, $services := service .Name | byTag}}{{if eq $tag "http"}}  acl is_{{$name}}_redis hdr_end(host) -i {{$name}}.nestedset.com
+{{range services}}{{$name := .Name}}{{range $tag, $services := service .Name | byTag}}{{if eq $tag "http"}}  acl is_{{$name}}_http hdr_end(host) -i {{$name}}.nestedset.com
 {{end}}{{end}}{{end}}
 {{range services}}{{$name := .Name}}{{range $tag, $services := service .Name | byTag}}{{if eq $tag "http"}}  use_backend {{$name}}_backend if is_{{$name}}_http
 {{end}}{{end}}{{end}}
@@ -34,7 +34,6 @@ backend {{.Name}}_backend
 {{end}}{{end}}
 
 defaults
-  timeout 5
   log global
   mode    http
   option  httplog
