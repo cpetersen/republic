@@ -9,8 +9,8 @@
   template:
     src: swarm.conf
     dest: /etc/init/swarm.conf
-  # notify:
-  #   - restart swarm
+  notify:
+    - restart swarm
 
 - name: Swarm | Install the swarm consul service
   template:
