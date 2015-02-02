@@ -1,0 +1,9 @@
+---
+- name: Mobile Shell | Install python-software-properties
+  apt: pkg=python-software-properties
+
+- name: Mobile Shell | Add mosh apt repo
+  apt_repository: repo='ppa:keithw/mosh' state=present update_cache=true
+
+- name: Mobile Shell | Install mosh
+  apt: pkg=mosh

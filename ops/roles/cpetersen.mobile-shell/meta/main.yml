@@ -1,0 +1,14 @@
+---
+
+galaxy_info:
+  author: Chris Petersen
+  description: Install and configure mobile shell
+  license: MIT
+  min_ansible_version: 1.4
+  platforms:
+    - name: Ubuntu
+      versions:
+        - trusty
+  categories:
+    - utilities
+dependencies: []

@@ -4,6 +4,7 @@
   vars:
     consul_server: yes
   roles:
+    - role: cpetersen.mobile-shell
     - role: cpetersen.consul
     - role: cpetersen.swarm
     - role: cpetersen.haproxy
@@ -15,6 +16,7 @@
   vars:
     consul_server: no
   roles:
+    - role: cpetersen.mobile-shell
     - role: cpetersen.consul
     - role: cpetersen.swarm
     - role: cpetersen.rsyslog
