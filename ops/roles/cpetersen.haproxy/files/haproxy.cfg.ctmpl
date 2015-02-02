@@ -6,8 +6,23 @@ global
   group haproxy
   daemon
 
+defaults
+  log global
+  timeout connect 5000ms
+  timeout client 50000ms
+  timeout server 50000ms
+  errorfile 400 /etc/haproxy/errors/400.http
+  errorfile 403 /etc/haproxy/errors/403.http
+  errorfile 408 /etc/haproxy/errors/408.http
+  errorfile 500 /etc/haproxy/errors/500.http
+  errorfile 502 /etc/haproxy/errors/502.http
+  errorfile 503 /etc/haproxy/errors/503.http
+  errorfile 504 /etc/haproxy/errors/504.http
+
 frontend http-in
   bind *:80
+  mode    http
+  option  httplog
 {{range services}}{{$name := .Name}}{{range $tag, $services := service .Name | byTag}}{{if eq $tag "http"}}  acl is_{{$name}}_http hdr_end(host) -i {{$name}}.nestedset.com
 {{end}}{{end}}{{end}}
 {{range services}}{{$name := .Name}}{{range $tag, $services := service .Name | byTag}}{{if eq $tag "http"}}  use_backend {{$name}}_backend if is_{{$name}}_http
@@ -15,6 +30,8 @@ frontend http-in
 
 frontend https-in
   bind *:443
+  mode    http
+  option  httplog
 {{range services}}{{$name := .Name}}{{range $tag, $services := service .Name | byTag}}{{if eq $tag "http"}}  acl is_{{$name}}_http hdr_end(host) -i {{$name}}.nestedset.com
 {{end}}{{end}}{{end}}
 {{range services}}{{$name := .Name}}{{range $tag, $services := service .Name | byTag}}{{if eq $tag "http"}}  use_backend {{$name}}_backend if is_{{$name}}_http
@@ -22,6 +39,8 @@ frontend https-in
 
 frontend redis-in
   bind *:6379
+  mode    tcp
+  option  tcplog
 {{range services}}{{$name := .Name}}{{range $tag, $services := service .Name | byTag}}{{if eq $tag "redis"}}  acl is_{{$name}}_redis hdr_end(host) -i {{$name}}.nestedset.com
 {{end}}{{end}}{{end}}
 {{range services}}{{$name := .Name}}{{range $tag, $services := service .Name | byTag}}{{if eq $tag "redis"}}  use_backend {{$name}}_backend if is_{{$name}}_redis
@@ -32,19 +51,3 @@ backend {{.Name}}_backend
   balance roundrobin
 {{range service .Name}}  server {{.Name}} {{.Address}}:{{.Port}}
 {{end}}{{end}}
-
-defaults
-  log global
-  mode    http
-  option  httplog
-  option  dontlognull
-          contimeout 5000
-          clitimeout 50000
-          srvtimeout 50000
-  errorfile 400 /etc/haproxy/errors/400.http
-  errorfile 403 /etc/haproxy/errors/403.http
-  errorfile 408 /etc/haproxy/errors/408.http
-  errorfile 500 /etc/haproxy/errors/500.http
-  errorfile 502 /etc/haproxy/errors/502.http
-  errorfile 503 /etc/haproxy/errors/503.http
-  errorfile 504 /etc/haproxy/errors/504.http
