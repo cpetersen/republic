@@ -9,6 +9,7 @@
     dest: /etc/haproxy/haproxy.cfg.ctmpl
   notify:
     - restart haproxy
+    - restart consul-template
 
 - name: HAProxy | Install the haproxy consul-template config
   template:
