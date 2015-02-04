@@ -50,6 +50,9 @@ docker run -d \
         -e AWS_KEY=$AWS_ACCESS_KEY_ID \
         -e AWS_SECRET=$AWS_SECRET_ACCESS_KEY \
         -e SEARCH_BACKEND=sqlalchemy \
+        -e "SERVICE_NAME=registry" 
+        -e "SERVICE_TAGS=http" 
+        --name=registry.0
         -p 5000:5000 \
         registry
 
@@ -62,6 +65,7 @@ OPS TODO
 Add consul-template and HAProxy template
 Add tls for swarm/consul
 Add volumes and volume backups... somehow.
+Add docker container for docker registry
 Add docker container for consul-ui
 Add docker container for postgres
 
@@ -132,15 +136,13 @@ RUN SOME CONTAINERS
 ===================
 
 export DOCKER_HOST=tcp://162.243.105.198:2375
-docker run -d -e "SERVICE_NAME=db" -e "SERVICE_TAGS=redis" --name=redis.0 -p 10000:6379 dockerfile/redis
-docker run -d -e "SERVICE_NAME=db" -e "SERVICE_TAGS=redis" --name=redis.1 -p 10001:6379 dockerfile/redis
-docker run -d -e "SERVICE_NAME=db" -e "SERVICE_TAGS=redis" --name=redis.2 -p 10002:6379 dockerfile/redis
-docker run -d -e "SERVICE_NAME=db" -e "SERVICE_TAGS=redis" --name=redis.3 -p 10003:6379 dockerfile/redis
-docker run -d -e "SERVICE_NAME=db2" -e "SERVICE_TAGS=redis" --name=redis.4 -p 10004:6379 dockerfile/redis
-docker run -d -e "SERVICE_NAME=db2" -e "SERVICE_TAGS=redis" --name=redis.5 -p 10005:6379 dockerfile/redis
-docker run -d -e "SERVICE_NAME=db2" -e "SERVICE_TAGS=redis" --name=redis.6 -p 10006:6379 dockerfile/redis
-docker run -d -e "SERVICE_NAME=db3" -e "SERVICE_TAGS=redis" --name=redis.7 -p 10007:6379 dockerfile/redis
-docker run -d -e "SERVICE_NAME=db3" -e "SERVICE_TAGS=redis" --name=redis.8 -p 10008:6379 dockerfile/redis
-docker run -d -e "SERVICE_NAME=db3" -e "SERVICE_TAGS=redis" --name=redis.9 -p 10009:6379 dockerfile/redis
-
+docker run -d -e "SERVICE_NAME=db1" -e "SERVICE_TAGS=redis" --name=redis.0 -p 10000:6379 dockerfile/redis
+docker run -d -e "SERVICE_NAME=db2" -e "SERVICE_TAGS=redis" --name=redis.1 -p 10001:6379 dockerfile/redis
+docker run -d -e "SERVICE_NAME=db3" -e "SERVICE_TAGS=redis" --name=redis.2 -p 10002:6379 dockerfile/redis
+docker run -d -e "SERVICE_NAME=db4" -e "SERVICE_TAGS=redis" --name=redis.3 -p 10003:6379 dockerfile/redis
+docker run -d -e "SERVICE_NAME=db5" -e "SERVICE_TAGS=redis" --name=redis.4 -p 10004:6379 dockerfile/redis
+docker run -d -e "SERVICE_NAME=db6" -e "SERVICE_TAGS=redis" --name=redis.5 -p 10005:6379 dockerfile/redis
+docker run -d -e "SERVICE_NAME=db7" -e "SERVICE_TAGS=redis" --name=redis.6 -p 10006:6379 dockerfile/redis
+docker run -d -e "SERVICE_NAME=db8" -e "SERVICE_TAGS=redis" --name=redis.7 -p 10007:6379 dockerfile/redis
+docker run -d -e "SERVICE_NAME=db9" -e "SERVICE_TAGS=redis" --name=redis.8 -p 10008:6379 dockerfile/redis
 
