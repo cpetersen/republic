@@ -12,6 +12,6 @@ galaxy_info:
   categories:
     - cloud
 dependencies: 
-  - { role: republicconsul }
-  - { role: republicdocker }
+  - { role: republic.consul }
+  - { role: republic.docker }
 

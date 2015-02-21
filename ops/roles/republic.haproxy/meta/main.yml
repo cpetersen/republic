@@ -12,5 +12,5 @@ galaxy_info:
   categories:
     - languages
 dependencies:
-  - { role: republicconsul-template }
-  - { role: republicdocker }
+  - { role: republic.consul-template }
+  - { role: republic.docker }

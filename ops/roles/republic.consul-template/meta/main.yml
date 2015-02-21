@@ -12,4 +12,4 @@ galaxy_info:
   categories:
     - languages
 dependencies:
-  - { role: republicconsul }
+  - { role: republic.consul }
