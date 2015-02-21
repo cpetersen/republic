@@ -2,7 +2,7 @@
 
 galaxy_info:
   author: Chris Petersen
-  description: Install and configure swarm
+  description: Install consul-template
   license: MIT
   min_ansible_version: 1.4
   platforms:
@@ -10,8 +10,6 @@ galaxy_info:
       versions:
         - trusty
   categories:
-    - cloud
-dependencies: 
-  - { role: cpetersen.consul }
-  - { role: cpetersen.docker }
-  - { role: cpetersen.golang }
+    - languages
+dependencies:
+  - { role: republicconsul }

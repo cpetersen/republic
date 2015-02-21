@@ -5,11 +5,11 @@
     logspout_api_key: e111fb1e-3d4d-44b5-a61a-8fa6c610cdf8
     consul_server: yes
   roles:
-    - role: cpetersen.consul
-    - role: cpetersen.swarm
-    - role: cpetersen.haproxy
-    - role: cpetersen.rsyslog
-    - role: cpetersen.registrator
+    - role: republicconsul
+    - role: republicswarm
+    - role: republichaproxy
+    - role: republicrsyslog
+    - role: republicregistrator
 
 - name: ensure worker servers are configured
   hosts: worker
@@ -17,7 +17,7 @@
     logspout_api_key: e111fb1e-3d4d-44b5-a61a-8fa6c610cdf8
     consul_server: no
   roles:
-    - role: cpetersen.consul
-    - role: cpetersen.swarm
-    - role: cpetersen.rsyslog
-    - role: cpetersen.registrator
+    - role: republicconsul
+    - role: republicswarm
+    - role: republicrsyslog
+    - role: republicregistrator

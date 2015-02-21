@@ -2,7 +2,7 @@
 
 galaxy_info:
   author: Chris Petersen
-  description: Install and configure registrator for registering docker containers with consul
+  description: Install and configure swarm
   license: MIT
   min_ansible_version: 1.4
   platforms:
@@ -12,6 +12,6 @@ galaxy_info:
   categories:
     - cloud
 dependencies: 
-  - { role: cpetersen.consul }
-  - { role: cpetersen.docker }
-
+  - { role: republicconsul }
+  - { role: republicdocker }
+  - { role: republicgolang }

@@ -2,7 +2,7 @@
 
 galaxy_info:
   author: Chris Petersen
-  description: Install consul-template
+  description: Install and configure docker
   license: MIT
   min_ansible_version: 1.4
   platforms:
@@ -10,6 +10,7 @@ galaxy_info:
       versions:
         - trusty
   categories:
-    - languages
+    - cloud
 dependencies:
-  - { role: cpetersen.consul }
+  - { role: republicconsul }
+
