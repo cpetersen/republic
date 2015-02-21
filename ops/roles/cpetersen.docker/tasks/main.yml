@@ -38,7 +38,7 @@
   register: logspouts_contents
 
 - name: Docker | Register legentries logspout route
-  script: logspout-router.sh
+  script: logspout-router.sh {{ logspout_api_key }}
   when: logspouts_contents.stdout.find('logentries') == -1
 
 - name: Docker | Add DOCKER_HOST to ENV
