@@ -1,10 +1,10 @@
 ---
-- name: ensure platform servers are configured
-  hosts: platform
+- name: ensure leader servers are configured
+  hosts: leader
   vars:
+    logspout_api_key: e111fb1e-3d4d-44b5-a61a-8fa6c610cdf8
     consul_server: yes
   roles:
-    - role: cpetersen.mobile-shell
     - role: cpetersen.consul
     - role: cpetersen.swarm
     - role: cpetersen.haproxy
@@ -14,9 +14,9 @@
 - name: ensure worker servers are configured
   hosts: worker
   vars:
+    logspout_api_key: e111fb1e-3d4d-44b5-a61a-8fa6c610cdf8
     consul_server: no
   roles:
-    - role: cpetersen.mobile-shell
     - role: cpetersen.consul
     - role: cpetersen.swarm
     - role: cpetersen.rsyslog

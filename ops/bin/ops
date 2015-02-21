@@ -7,7 +7,7 @@ require "net/ssh"
 require "redis"
 require "thor"
 
-module Ops
+module Republic
   class CommonTasks < Thor
     no_tasks do
       def cluster_name
@@ -195,12 +195,12 @@ module Ops
       end
 
       def update_dns
-        # NoOp (overriden in Platform)
+        # NoOp (overriden in Leader)
       end
     end
   end
 
-  class Platform < GeneralCluster
+  class Leader < GeneralCluster
     desc "dns", "Update the dns records"
     def dns
       update_dns
@@ -208,7 +208,7 @@ module Ops
 
     no_tasks do
       def type_name
-        "platform"
+        "leader"
       end
 
       def route53
@@ -247,8 +247,8 @@ module Ops
   end
 
   class CLI < CommonTasks
-    desc "platform [SUBCOMMAND]", "Manage the platform machines"
-    subcommand "platform", Platform
+    desc "leader [SUBCOMMAND]", "Manage the leader machines"
+    subcommand "leader", Leader
 
     desc "worker [SUBCOMMAND]", "Manage the worker machines"
     subcommand "worker", Worker
@@ -289,12 +289,12 @@ module Ops
     desc "join", "Join the cluster"
     def join
       update_inventory_file # Make sure inventory is up to date
-      platform_machines = Platform.new.machines
-      command = "ansible-playbook -i inventory join.yml --extra-vars \"ip_address=#{platform_machines.first[:ip_address]}\""
+      leader_machines = Leader.new.machines
+      command = "ansible-playbook -i inventory join.yml --extra-vars \"ip_address=#{leader_machines.first[:ip_address]}\""
       puts "Running [#{command}]"
       shell_command(command)
       puts "Updating A Record"
-      Platform.new.update_dns
+      Leader.new.update_dns
     end
 
     desc "destroy NAME", "Destroy specific machines of any type in the cluster"
@@ -343,14 +343,14 @@ module Ops
       end
     end
 
-    desc "config", "Setup client configuration for the platform"
+    desc "config", "Setup client configuration for the leader"
     def config
       update_ssh_config(true)
     end
 
     no_tasks do
       def machine_types
-        [Platform, Worker]
+        [Leader, Worker]
       end
 
       def machines?
@@ -393,4 +393,4 @@ module Ops
   end
 end
 
-Ops::CLI.start(ARGV)
+Republic::CLI.start(ARGV)

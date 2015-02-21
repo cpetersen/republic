@@ -1,7 +1,7 @@
 ---
 
 - name: join the consul cluster
-  hosts: platform
+  hosts: leader
   handlers:
     - name: restart swarm
       service:
