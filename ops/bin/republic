@@ -246,12 +246,76 @@ module Republic
     end
   end
 
+  class Tls < Thor
+    desc "init", "Init the tls keys"
+    def init
+      FileUtils.mkdir_p(".tls")
+
+      config = OpenSSL::Config.new("openssl.cnf")
+
+      ca_key = create_key("ca.key.pem")
+
+      # START Create CA Cert
+      ca_name = OpenSSL::X509::Name.new
+      config["req_distinguished_name"].each do |key, value|
+        name.add_entry( key, value )
+      end
+      ca_cert, ca_ef = create_cert(ca_key)
+      ca_cert.subject = ca_name
+      config["req_ext"].each do |key, value|
+        ca_cert.add_extension( ca_ef.create_extension( key, value, true ) )
+      end
+      config["x509_ext"].each do |key, value|
+        ca_cert.add_extension( ca_ef.create_extension( key, value, true ) )
+      end
+      open '.tls/ca.cert.pem', 'w' do |io| io.write ca_cert.to_pem end
+      # cert.sign(root_key, OpenSSL::Digest::SHA256.new)
+      # END Create CA Cert
+
+      # START Create Swarm CSR
+      swarm_key = create_key("swarm.key.pem")
+      swarm_cert, swarm_ef = create_cert(swarm_key)
+      swarm_cert.subject = "/CN=nestedset.com"
+      open '.tls/swarm.csr', 'w' do |io| io.write swarm_cert.to_pem end
+      # END Create Swarm CSR
+
+
+    end
+
+    no_tasks do
+      def create_key(name)
+        # Create CA Key
+        key = OpenSSL::PKey::RSA.new 4096
+        open '.tls/#{name}', 'w' do |io| io.write key.to_pem end
+        # open 'public_key.pem', 'w' do |io| io.write key.public_key.to_pem end
+        key
+      end
+
+      def create_cert(key)
+        cert = OpenSSL::X509::Certificate.new
+        cert.version = 2
+        cert.serial = 0 # TODO: Make two digit secure random
+        cert.not_before = Time.now
+        cert.not_after = cert.not_before + 10 * 365 * 24 * 60 * 60 # 10 years validity
+        cert.public_key = key.public_key
+
+        ef = OpenSSL::X509::ExtensionFactory.new
+        ef.subject_certificate = cert
+        ef.issuer_certificate = cert
+        [cert, ef]
+      end
+    end
+  end
+
   class CLI < CommonTasks
     desc "leader [SUBCOMMAND]", "Manage the leader machines"
     subcommand "leader", Leader
 
     desc "worker [SUBCOMMAND]", "Manage the worker machines"
     subcommand "worker", Worker
+
+    desc "tls [SUBCOMMAND]", "Manage tls"
+    subcommand "tls", Tls
 
     desc "status", "Get status of all machine groups"
     method_option :check_ssh, type: :boolean, aliases: "-s", default: false
