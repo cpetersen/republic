@@ -11,7 +11,7 @@ module Republic
   class CommonTasks < Thor
     no_tasks do
       def cluster_name
-        "general"
+        "republic"
       end
 
       def redis
@@ -71,7 +71,7 @@ module Republic
       n.to_i.times do
         redis.incr("#{cluster_type_name}-counter")
         i = redis.get("#{cluster_type_name}-counter")
-        name = "#{cluster_type_name}-node-#{i}"
+        name = "#{cluster_type_name}-#{i}"
         puts "Launching #{name}"
         result = barge.droplet.create(droplet_options.merge(name: name))
         if result.droplet
@@ -253,15 +253,17 @@ module Republic
 
       config = OpenSSL::Config.new("openssl.cnf")
 
-      ca_key = create_key("ca.key.pem")
+      ca_key = create_key("ca")
 
       # START Create CA Cert
       ca_name = OpenSSL::X509::Name.new
       config["req_distinguished_name"].each do |key, value|
-        name.add_entry( key, value )
+        ca_name.add_entry( key, value )
       end
       ca_cert, ca_ef = create_cert(ca_key)
       ca_cert.subject = ca_name
+      ca_cert.issuer = ca_name
+      ca_ef.issuer_certificate = ca_cert
       config["req_ext"].each do |key, value|
         ca_cert.add_extension( ca_ef.create_extension( key, value, true ) )
       end
@@ -269,25 +271,48 @@ module Republic
         ca_cert.add_extension( ca_ef.create_extension( key, value, true ) )
       end
       open '.tls/ca.cert.pem', 'w' do |io| io.write ca_cert.to_pem end
-      # cert.sign(root_key, OpenSSL::Digest::SHA256.new)
+      ca_cert.sign(ca_key, OpenSSL::Digest::SHA256.new)
       # END Create CA Cert
 
-      # START Create Swarm CSR
-      swarm_key = create_key("swarm.key.pem")
-      swarm_cert, swarm_ef = create_cert(swarm_key)
-      swarm_cert.subject = "/CN=nestedset.com"
-      open '.tls/swarm.csr', 'w' do |io| io.write swarm_cert.to_pem end
-      # END Create Swarm CSR
+      # START Create Swarm CERT
+      swarm_key = create_key("swarm")
+      swarm_csr = create_csr("swarm", "/CN=nestedset.com", swarm_key)
+      csr_to_cert("swarm", swarm_csr, ca_name, ca_key, config["req_ext"])
+      # END Create Swarm CERT
 
+      # START Create Node Certs
+      ["republic-leader-1","republic-leader-2","republic-leader-3","republic-worker-1","republic-worker-2","republic-worker-3"].each do |name|
+        # create_node_cert(name, ca_name, ca_key)
+        node(name)
+      end
+      # END Create Node Certs
 
+      # START Create Client CERT
+      host = Socket.gethostname
+      host_key = create_key(host)
+      host_csr = create_csr(host, "/CN=#{host}", host_key)
+      csr_to_cert(host, host_csr, ca_name, ca_key)
+      # END Create Client CERT
+    end
+
+    desc "node NODE", "Create the certs for a specific node"
+    def node(node)
+      config = OpenSSL::Config.new("openssl.cnf")
+
+      # START Create CA Cert
+      ca_name = OpenSSL::X509::Name.new
+      config["req_distinguished_name"].each do |key, value|
+        ca_name.add_entry( key, value )
+      end
+      create_node_cert(node, ca_name, get_key("ca"))
     end
 
     no_tasks do
       def create_key(name)
         # Create CA Key
         key = OpenSSL::PKey::RSA.new 4096
-        open '.tls/#{name}', 'w' do |io| io.write key.to_pem end
-        # open 'public_key.pem', 'w' do |io| io.write key.public_key.to_pem end
+        open(".tls/#{name}.private_key.pem", "w") do |io| io.write key.to_pem end
+        open(".tls/#{name}.public_key.pem", "w") do |io| io.write key.public_key.to_pem end
         key
       end
 
@@ -301,8 +326,41 @@ module Republic
 
         ef = OpenSSL::X509::ExtensionFactory.new
         ef.subject_certificate = cert
-        ef.issuer_certificate = cert
         [cert, ef]
+      end
+
+      def create_csr(name, common_name, key)
+        csr = OpenSSL::X509::Request.new
+        csr.public_key = key.public_key
+        csr.subject = OpenSSL::X509::Name.parse(common_name)
+        csr.sign(key, OpenSSL::Digest::SHA256.new)
+        open(".tls/#{name}.csr.pem", "w") do |io| io.write csr.to_pem end
+        csr
+      end
+
+      def get_key(name)
+        OpenSSL::PKey::RSA.new File.read(".tls/#{name}.private_key.pem")
+      end
+
+      def csr_to_cert(name, csr, ca_name, ca_key, section=nil)
+        cert = OpenSSL::X509::Certificate.new
+        cert.serial = 0
+        cert.version = 2
+        cert.not_before = Time.now
+        cert.not_after = Time.now + 10 * 365 * 24 * 60 * 60 # 10 years validity
+        cert.subject = csr.subject
+        cert.public_key = csr.public_key
+        cert.issuer = ca_name
+        cert.sign(ca_key, OpenSSL::Digest::SHA256.new)
+        open(".tls/#{name}.cert.pem", "w") do |io| io.write cert.to_pem end
+        cert
+      end
+
+      def create_node_cert(name, ca_name, ca_key)
+        node_key = create_key(name)
+        node_csr = create_csr(name, "/CN=#{name}.nestedset.com", node_key)
+        node_cert = csr_to_cert(name, node_csr, ca_name, ca_key)
+        node_cert
       end
     end
   end
