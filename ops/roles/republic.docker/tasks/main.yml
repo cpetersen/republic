@@ -9,6 +9,17 @@
 - name: Docker | Install docker
   apt: pkg=lxc-docker
 
+- name: Docker | Creates tls directory
+  file: path=/etc/consul.d state=directory
+
+# - name: Docker | Install the docker tls cert
+#   template:
+#     src: /.tls/{{ hostname }}.cert.pem
+#     dest: /etc/init/docker.conf
+#   register: docker_conf_result
+#   notify:
+#     - restart docker
+
 - name: Docker | Install the docker upstart script
   template:
     src: docker.conf
@@ -24,10 +35,6 @@
 - name: Docker | Check running containers
   shell: docker -H {{ ansible_default_ipv4.address }}:4243 ps -a
   register: docker_contents
-
-# - name: Docker | Launch registrator
-#   shell: DOCKER_HOST={{ ansible_default_ipv4.address }}:4243 docker run -d --env=DOCKER_HOST=http://{{ ansible_default_ipv4.address }}:4243 --restart=always --name=registrator progrium/registrator consul://{{ ansible_default_ipv4.address }}:8500
-#   when: docker_contents.stdout.find('registrator') == -1
 
 - name: Docker | Launch logspout
   shell: DOCKER_HOST={{ ansible_default_ipv4.address }}:4243 docker run -d --env=DOCKER_HOST=http://{{ ansible_default_ipv4.address }}:4243 -e "SERVICE_NAME=logspout" -e "SERVICE_TAGS=http" --restart=always -p 8000:8000 --name=logspout progrium/logspout
