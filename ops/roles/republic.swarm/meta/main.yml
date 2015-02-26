@@ -14,4 +14,3 @@ galaxy_info:
 dependencies: 
   - { role: republic.consul }
   - { role: republic.docker }
-  - { role: republic.golang }
