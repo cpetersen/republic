@@ -61,10 +61,11 @@ Finally, provision the machines and join the cluster.
   republic leader [SUBCOMMAND]  # Manage the leader machines
   republic provision            # Provision the machines in the cluster
   republic status               # Get status of all machine groups
+  republic tls [SUBCOMMAND]     # Manage tls
   republic worker [SUBCOMMAND]  # Manage the worker machines
 ```
 
-`./bin/ops platform` yields:
+`./bin/ops leader` yields:
 
 ```
   republic leader add N           # Add machines to the cluster
@@ -81,4 +82,12 @@ Finally, provision the machines and join the cluster.
   republic worker destroy         # Destroy the machines in the cluster
   republic worker help [COMMAND]  # Describe subcommands or one specific subcommand
   republic worker status          # Check the status of machines in the cluster
+```
+
+`./bin/ops tls` yields:
+
+```
+  republic tls help [COMMAND]  # Describe subcommands or one specific subcommand
+  republic tls init            # Init the tls keys
+  republic tls node NODE       # Create the certs for a specific node
 ```

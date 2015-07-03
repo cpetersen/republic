@@ -1,9 +1,12 @@
 ---
 
+# - name: Swarm | Install swarm
+#   shell: GOPATH=/opt/gocode go get -u github.com/docker/swarm
+#   args:
+#     creates: /opt/gocode/bin/swarm
+
 - name: Swarm | Install swarm
-  shell: GOPATH=/opt/gocode go get -u github.com/docker/swarm
-  args:
-    creates: /opt/gocode/bin/swarm
+  get_url: url=https://github.com/docker/swarm/releases/download/v{{ swarm_version }}/docker-swarm_linux-amd64 dest=/usr/bin/swarm mode=0755
 
 - name: Swarm | Install the swarm upstart script
   template:
