@@ -14,19 +14,38 @@ When a `docker` container is pushed to the `swarm`, it is pushed to one of the p
 
 ## Setup
 
-### Required Variables
+### Required Shell Variables
 
- * REDIS_URL
- * DIGITALOCEAN_KEY_ID
- * DIGITALOCEAN_TOKEN
- * AWS_ACCESS_KEY_ID
+ * REDIS_URL - for storing shared state. This allows you to manage the same cluster from any computer that can access this instance of redis.
+ * DIGITALOCEAN_TOKEN - for creating and destroying droplets
+ * DIGITALOCEAN_KEY_ID - the ssh key you want to use
+ * AWS_ACCESS_KEY_ID - AWS credentials, republic uses Route53 for DNS
  * AWS_SECRET_ACCESS_KEY
- * AWS_HOSTED_ZONE_ID
+ * AWS_HOSTED_ZONE_ID - the zone to point at this cluster
 
 ## Usage
 
-To get started, add 3 platform workers:
+## Quick Start
 
+To get started, add 3 platform workers and handful of workers (You can add workers at anytime using the same series of commands):
+
+```shell
+./bin/republic leader add 3
+./bin/republic worker add 5
+```
+
+Now wait for the instances to start. You can check on their progress with:
+
+```shell
+./bin/republic status
+```
+
+Finally, provision the machines and join the cluster.
+
+```shell
+./bin/republic provision
+./bin/republic join
+```
 
 ## CLI Help
 
@@ -42,7 +61,6 @@ To get started, add 3 platform workers:
   republic leader [SUBCOMMAND]  # Manage the leader machines
   republic provision            # Provision the machines in the cluster
   republic status               # Get status of all machine groups
-  republic tls [SUBCOMMAND]     # Manage tls
   republic worker [SUBCOMMAND]  # Manage the worker machines
 ```
 
