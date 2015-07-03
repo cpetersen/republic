@@ -1,2 +1,5 @@
 facts.json
+ops/.cli-tls
+ops/.ruby-tls
+ops/.tls
 
