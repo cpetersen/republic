@@ -1,5 +1,6 @@
+.tls
+.cli-tls
+.ruby-tls
+inventory
+redis.json
 facts.json
-ops/.cli-tls
-ops/.ruby-tls
-ops/.tls
-
