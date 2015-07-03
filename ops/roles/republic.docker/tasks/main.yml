@@ -10,30 +10,46 @@
   apt: pkg=lxc-docker
 
 - name: Docker | Creates tls directory
-  file: path=/etc/consul.d state=directory
+  file: path=/etc/tls state=directory
 
-# - name: Docker | Install the docker tls cert
-#   template:
-#     src: /.tls/{{ hostname }}.cert.pem
-#     dest: /etc/init/docker.conf
-#   register: docker_conf_result
-#   notify:
-#     - restart docker
+- name: Docker | Install the docker tls cert
+  template:
+    src: .tls/{{ inventory_host }}.cert.pem
+    dest: /etc/tls/docker.cert.pem
+  register: docker_cert
+  notify:
+    - restart docker
+
+- name: Docker | Install the docker private key
+  template:
+    src: .tls/{{ inventory_host }}.private_key.pem
+    dest: /etc/tls/docker.private_key.pem
+  register: docker_key
+  notify:
+    - restart docker
+
+- name: Docker | Install the ca cert
+  template:
+    src: .tls/ca.cert.pem
+    dest: /etc/tls/ca.cert.pem
+  register: docker_ca
+  notify:
+    - restart docker
 
 - name: Docker | Install the docker upstart script
   template:
     src: docker.conf
     dest: /etc/init/docker.conf
-  register: docker_conf_result
+  register: docker_conf
   notify:
     - restart docker
 
 - name: Docker | restart docker
   service: name=docker state=restarted
-  when: docker_conf_result.changed
+  when: docker_conf.changed or docker_ca.changed or docker_key.changed or docker_cert.changed
 
 - name: Docker | Check running containers
-  shell: docker -H {{ ansible_default_ipv4.address }}:4243 ps -a
+  shell: docker --tlsverify --tlscacert=/etc/tls/ca.cert.pem --tlscert=/etc/tls/docker.cert.pem --tlskey=/etc/tls/docker.private_key.pem -H {{ ansible_default_ipv4.address }}:4243 ps -a
   register: docker_contents
 
 - name: Docker | Launch logspout

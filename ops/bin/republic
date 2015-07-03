@@ -14,6 +14,10 @@ module Republic
         "republic"
       end
 
+      def machine_types
+        [Leader, Worker]
+      end
+
       def redis
         @redis ||= Redis.new(url: ENV["REDIS_URL"])
       end
@@ -246,19 +250,18 @@ module Republic
     end
   end
 
-  class Tls < Thor
+  class Tls < CommonTasks
     desc "init", "Init the tls keys"
     def init
       FileUtils.mkdir_p(".tls")
 
       ca_cert
-
       swarm_cert
-
-      ["republic-leader-1","republic-leader-2","republic-leader-3","republic-worker-1","republic-worker-2","republic-worker-3"].each do |name|
-        create_node_cert(name)
+      machine_types.each do |klazz|
+        klazz.new.machines.each do |machine|
+          node_cert(machine)
+        end
       end
-
       client_cert
     end
 
@@ -316,11 +319,15 @@ module Republic
           @ca_cert.public_key = ca_key.public_key
           @ca_cert.subject = ca_name
           @ca_cert.issuer = ca_name
-          ca_ef.issuer_certificate = @ca_cert
-          config["req_ext"].each do |key, value|
+
+          # IsCA:true
+          # x509.KeyUsageCertSign
+          # @ca_cert.add_extension( ca_ef.create_extension( "basicConstraints", ", true ) )
+          config["v3_req"].each do |key, value|
+            # value = "CA:TRUE" if key=="basicConstraints"
             @ca_cert.add_extension( ca_ef.create_extension( key, value, true ) )
           end
-          config["x509_ext"].each do |key, value|
+          config["v3_ca"].each do |key, value|
             @ca_cert.add_extension( ca_ef.create_extension( key, value, true ) )
           end
           open '.tls/ca.cert.pem', 'w' do |io| io.write @ca_cert.to_pem end
@@ -342,7 +349,11 @@ module Republic
         else
           puts "Creating [swarm] cert"
           swarm_csr = create_csr("swarm", "/CN=nestedset.com", swarm_key)
-          @swarm_cert = csr_to_cert("swarm", swarm_csr, config["req_ext"])
+          @swarm_cert = csr_to_cert("swarm", swarm_csr) do |cert, ef|
+            config["v3_req"].each do |key, value|
+              cert.add_extension( ef.create_extension( key, value, true ) )
+            end
+          end
         end
         @swarm_cert
       end
@@ -371,8 +382,9 @@ module Republic
         csr
       end
 
-      def csr_to_cert(name, csr, section=nil)
-        cert, ef = blank_cert
+      def csr_to_cert(name, csr, &block)
+        cert, ef = blank_cert(ca_cert)
+        block.call(cert, ef) if block
 
         cert.subject = csr.subject
         cert.public_key = csr.public_key
@@ -382,20 +394,25 @@ module Republic
         cert
       end
 
-      def create_node_cert(name)
+      def node_cert(machine)
+        name = machine[:name]
+        ip = machine[:ip_address]
         if File.exists?(".tls/#{name}.cert.pem")
           puts "Loading [#{name}] cert"
-          node_cert = OpenSSL::X509::Certificate.new(File.read(".tls/#{name}.cert.pem"))
+          cert = OpenSSL::X509::Certificate.new(File.read(".tls/#{name}.cert.pem"))
         else
           puts "Creating [#{name}] cert"
-          node_key = get_key(name)
-          node_csr = create_csr(name, "/CN=#{name}.nestedset.com", node_key)
-          node_cert = csr_to_cert(name, node_csr)
+          key = get_key(name)
+          csr = create_csr(name, "/CN=#{name}.nestedset.com", key)
+          cert = csr_to_cert(name, csr) do |cert, ef|
+            puts "ADDING IP [#{ip}]"
+            cert.add_extension(ef.create_extension("subjectAltName", "IP: #{ip}")) if ip
+          end
         end
-        node_cert
+        cert
       end
 
-      def blank_cert
+      def blank_cert(issuer_cert=nil)
         cert = OpenSSL::X509::Certificate.new
         cert.serial = 0
         cert.version = 2
@@ -404,6 +421,7 @@ module Republic
 
         ef = OpenSSL::X509::ExtensionFactory.new
         ef.subject_certificate = cert
+        ef.issuer_certificate = issuer_cert || cert
         [cert, ef]
       end
     end
@@ -515,10 +533,6 @@ module Republic
     end
 
     no_tasks do
-      def machine_types
-        [Leader, Worker]
-      end
-
       def machines?
         machine_types.inject(false) { |memo, klazz| klazz.new.machines? || memo }
       end
@@ -531,7 +545,7 @@ module Republic
               unless _machines.empty?
                 file.puts "[#{klazz.name.split('::').last.downcase}]"
                 _machines.each do |machine|
-                  file.puts "#{machine[:ip_address]} ansible_ssh_user=root"
+                  file.puts "#{machine[:ip_address]} ansible_ssh_user=root inventory_host=#{machine[:name]}"
                 end
                 file.puts ""
               end

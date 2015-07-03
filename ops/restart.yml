@@ -1,0 +1,62 @@
+---
+
+- name: restart docker swarm and consul
+  hosts: leader
+  handlers:
+    - name: restart consul
+      service:
+        name: consul
+        state: restarted
+
+    - name: restart docker
+      service:
+        name: docker
+        state: restarted
+
+    - name: restart swarm-manager
+      service:
+        name: swarm-manager
+        state: restarted
+
+  tasks:
+    - name: Consul | restart
+      command: /bin/true
+      notify:
+        - restart consul
+
+    - name: Docker | restart
+      command: /bin/true
+      notify:
+        - restart swarm-manager
+
+    - name: Swarm | restart
+      command: /bin/true
+      notify:
+        - restart swarm-manager
+
+
+
+- name: restart docker and consul
+  hosts: worker
+  handlers:
+    - name: restart consul
+      service:
+        name: consul
+        state: restarted
+
+    - name: restart docker
+      service:
+        name: docker
+        state: restarted
+
+  tasks:
+    - name: Consul | restart
+      command: /bin/true
+      notify:
+        - restart consul
+
+    - name: Docker | restart
+      command: /bin/true
+      notify:
+        - restart swarm-manager
+

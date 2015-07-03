@@ -12,7 +12,31 @@
         name: swarm-manager
         state: restarted
   tasks:
-    - name: join the cluster
+    - name: Swarm | Creates tls directory
+        file: path=/etc/tls state=directory
+
+    - name: Swarm | Install the swarm tls cert
+      template:
+        src: .tls/swarm.cert.pem
+        dest: /etc/tls/swarm.cert.pem
+      notify:
+        - restart swarm-manager
+
+    - name: Swarm | Install the swarm private key
+      template:
+        src: .tls/{{ inventory_host }}.private_key.pem
+        dest: /etc/tls/swarm.private_key.pem
+      notify:
+        - restart swarm-manager
+
+    - name: Swarm | Install the ca cert
+      template:
+        src: .tls/ca.cert.pem
+        dest: /etc/tls/ca.cert.pem
+      notify:
+        - restart swarm-manager
+
+    - name: Consul | join the cluster
       shell: consul join {{ ip_address }}
       # when: ansible_default_ipv4["address"] != ip_address
       notify:

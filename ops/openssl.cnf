@@ -1,7 +1,7 @@
 [ req ]
 distinguished_name  = req_distinguished_name
-req_extensions = req_ext
-x509_extensions = x509_ext
+req_extensions = v3_req
+x509_extensions = v3_ca
 
 [ req_distinguished_name ]
 countryName = US
@@ -9,16 +9,16 @@ stateOrProvinceName = CA
 localityName = Coronado
 organizationalUnitName = NestedSet
 
-[ req_ext ]
+[ v3_req ] 
 basicConstraints = CA:FALSE
 keyUsage = nonRepudiation, digitalSignature, keyEncipherment
-extendedKeyUsage = clientAuth,serverAuth
 subjectKeyIdentifier = hash
 
-[ x509_ext ]
-subjectKeyIdentifier  = hash
-authorityKeyIdentifier  = keyid:always,issuer:always
-basicConstraints = CA:true
+[ v3_ca ]
+subjectKeyIdentifier = hash
+authorityKeyIdentifier = keyid:always,issuer:always
+basicConstraints = CA:TRUE
+keyUsage = keyCertSign, cRLSign
 
 [ crl_ext ]
 authorityKeyIdentifier=keyid:always

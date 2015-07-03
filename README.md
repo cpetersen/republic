@@ -146,3 +146,33 @@ docker run -d -e "SERVICE_NAME=db7" -e "SERVICE_TAGS=redis" --name=redis.6 -p 10
 docker run -d -e "SERVICE_NAME=db8" -e "SERVICE_TAGS=redis" --name=redis.7 -p 10007:6379 dockerfile/redis
 docker run -d -e "SERVICE_NAME=db9" -e "SERVICE_TAGS=redis" --name=redis.8 -p 10008:6379 dockerfile/redis
 
+
+machine create --driver digitalocean --digitalocean-access-token=$MACHINE_DIGITALOCEAN_TOKEN republic-machine-1
+
+#server
+docker --tlsverify --tlscacert=/etc/tls/ca.cert.pem --tlscert=/etc/tls/docker.cert.pem --tlskey=/etc/tls/docker.private_key.pem ps
+
+#client
+docker --verbose --tlsverify --tlscacert=.tls/ca.cert.pem --tlscert=./$HOST.cert.pem --tlskey=.tls/$HOST.private_key.pem -H 104.131.230.67:4243 ps
+
+
+openssl verify -verbose -CAfile .tls/ca.cert.pem .tls/republic-leader-1.cert.pem
+
+# CA
+openssl genrsa -out CAkey.pem 2048
+openssl req -config openssl.cnf -new -key cakey.pem -x509 -days 3650 -out ca.pem
+
+# SWARM
+openssl genrsa -out swarmkey.pem 2048
+openssl req -subj "/CN=nestedset.com" -new -key swarmkey.pem -out swarm.csr
+
+openssl x509 -req -days 3650 -in swarm.csr -CA ca.pem -CAkey CAkey.pem -CAcreateserial -out swarmCRT.pem -extensions v3_req -extfile openssl.cnf
+openssl rsa -in swarmkey.pem -out swarmkey.pem
+
+# NODES
+openssl genrsa -out node01KEY.pem 2048
+openssl req -subj "/CN=node1" -new -key node01KEY.pem -out node01.csr
+
+Sign your certificate
+openssl x509 -req -days 3650 -in node01.csr -CA ca.pem -CAkey CAkey.pem -CAcreateserial -out node01CRT.pem -extensions v3_req -extfile openssl.cnf
+openssl rsa -in node01KEY.pem -out node01KEY.pem
